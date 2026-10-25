@@ -72,7 +72,13 @@ export default function RoleSelectionScreen() {
                 <Text style={styles.submitBtnText}>Lihat Jadwal Praktikum</Text>
               </TouchableOpacity>
             </Link>
-          ) : null}
+          ) : (
+            <Link href="/praktikan/index" asChild>
+              <TouchableOpacity accessibilityRole="link" style={styles.submitBtn}>
+                <Text style={styles.submitBtnText}>Lihat Jadwal Saya</Text>
+              </TouchableOpacity>
+            </Link>
+          )}
         </View>
       </SafeAreaView>
     );

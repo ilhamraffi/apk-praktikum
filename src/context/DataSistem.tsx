@@ -53,7 +53,7 @@ export const DUMMY_USERS: User[] = [
     password: "123", 
   },
   {
-    id: "P1",
+    id: "P2",
     nama: "Muchammad Rajib Tafrichan",
     nim: "24060124140141",
     kelas: "IF-C",
