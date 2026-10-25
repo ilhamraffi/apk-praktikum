@@ -23,7 +23,7 @@ export default function DetailSesiPraktikanScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Link href="/praktikan/index" dismissTo asChild>
+        <Link href="/praktikan/index" replace asChild>
           <TouchableOpacity style={styles.backButton} accessibilityRole="link">
             <Text accessible={false} style={styles.backArrow}>‹</Text>
             <Text style={styles.backText}>Kembali ke jadwal</Text>
