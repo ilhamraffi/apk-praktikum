@@ -1,3 +1,4 @@
+import { Link } from "expo-router";
 import { useState } from "react";
 import {
   Platform,
@@ -65,6 +66,13 @@ export default function RoleSelectionScreen() {
           <Text style={{ marginTop: 8, color: "#475569" }}>
             Pilih jadwal dan Kelas Praktikum
           </Text>
+          {currentUser.role === "ASISTEN" ? (
+            <Link href="/asisten" asChild>
+              <TouchableOpacity accessibilityRole="link" style={styles.submitBtn}>
+                <Text style={styles.submitBtnText}>Lihat Jadwal Praktikum</Text>
+              </TouchableOpacity>
+            </Link>
+          ) : null}
         </View>
       </SafeAreaView>
     );
