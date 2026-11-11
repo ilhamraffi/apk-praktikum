@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "528136265613",
+    "project_id": "tugas-praktikum-86a6f",
+    "storage_bucket": "tugas-praktikum-86a6f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:528136265613:android:ce103efd5225b31040e7c4",
+        "android_client_info": {
+          "package_name": "com.ilhamraffimobile.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBTzinMVrvfivUZNIPv1BTfu8AUf0HTvY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
