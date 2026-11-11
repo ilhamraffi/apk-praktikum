@@ -17,6 +17,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "package": "com.ilhamraffimobile.myapp"
     },
@@ -34,10 +35,26 @@
           "imageWidth": 76
         }
       ],
+      [
+         "./plugins/withFirebaseBom.js",
+        {
+          "bom": "34.19.0"
+        }
+      ],
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+  "expo-build-properties",
+  {
+    "android": {
+      "kotlinVersion": "2.2.20"
+    }
+  }
+]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -50,8 +67,9 @@
         }
       },
       "eas": {
-        "projectId": "1b47d7a0-72fb-4ea3-b253-0fb31e8a9c87"
+        "projectId": "5d2c0c2d-8bcf-4eb8-917e-0b8ab4f8a7a4"
       }
-    }
+    },
+    "owner": "farhanmuhtarams-team"
   }
 }
