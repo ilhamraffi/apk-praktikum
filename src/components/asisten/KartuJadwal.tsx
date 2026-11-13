@@ -1,21 +1,28 @@
+// src/components/asisten/KartuJadwal.tsx
 import { Link } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import type { Session } from "../../context/DataSistem";
+import type { Sesi } from "../../types";
 import { InformasiSesi } from "./InformasiSesi";
 import { StatusSesi } from "./StatusSesi";
 
-export function KartuJadwal({ sesi }: { sesi: Session }) {
+export function KartuJadwal({
+  sesi,
+  kelasLabel,
+}: {
+  sesi: Sesi;
+  kelasLabel?: string;
+}) {
   const nama = sesi.namaPraktikum?.trim() || "Praktikum";
   const modul = sesi.modul?.trim();
 
   return (
     <Link
-      href={{ pathname: "/asisten/[sesiId]", params: { sesiId: sesi.id } }}
+      href={{ pathname: "/asisten/[sesiId]", params: { sesiId: sesi.id ?? "" } }}
       asChild
     >
       <TouchableOpacity
         accessibilityRole="link"
-        accessibilityLabel={`Lihat detail ${nama}, kelas ${sesi.kelas}`}
+        accessibilityLabel={`Lihat detail ${nama}, kelas ${kelasLabel ?? "-"}`}
         accessibilityHint="Menampilkan informasi sesi praktikum."
         activeOpacity={0.85}
         style={styles.card}
@@ -25,7 +32,7 @@ export function KartuJadwal({ sesi }: { sesi: Session }) {
           <Text style={styles.title}>{nama}</Text>
           {modul ? <Text style={styles.module}>{modul}</Text> : null}
         </View>
-        <InformasiSesi sesi={sesi} />
+        <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
         <View style={styles.action}>
           <Text style={styles.actionText}>Lihat detail sesi</Text>
           <Text accessible={false} style={styles.arrow}>›</Text>

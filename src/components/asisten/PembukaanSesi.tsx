@@ -1,47 +1,36 @@
-import { useEffect, useRef, useState } from "react";
+// src/components/asisten/PembukaanSesi.tsx
+import { useState } from "react";
 import { Link } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useAttendance, type Session } from "../../context/DataSistem";
+import { useAuth } from "../../context/AuthContext";
+import { bukaSesi } from "../../hooks/useSesi";
+import { pesanError } from "../../lib/errors";
+import type { Sesi } from "../../types";
 import { KonfirmasiBukaSesi } from "./KonfirmasiBukaSesi";
 
-export function PembukaanSesi({ sesi }: { sesi: Session }) {
-  const { currentUser, sessions, bukaSesi } = useAttendance();
+export function PembukaanSesi({ sesi }: { sesi: Sesi }) {
+  const { user, role } = useAuth();
   const [konfirmasiTerbuka, setKonfirmasiTerbuka] = useState(false);
-  const [pembukaanDiminta, setPembukaanDiminta] = useState(false);
-  const [gagalMembuka, setGagalMembuka] = useState(false);
-  const pembukaanTerkunci = useRef(false);
-  const asisten = currentUser?.role === "ASISTEN";
+  const [memproses, setMemproses] = useState(false);
+  const [gagal, setGagal] = useState<string | null>(null);
+
+  const asisten = role === "ASISTEN";
   const bolehMembuka = asisten && sesi.status === "BELUM_DIBUKA";
 
-  useEffect(() => {
-    if (!bolehMembuka) setKonfirmasiTerbuka(false);
-  }, [bolehMembuka]);
-
-  const tampilkanKonfirmasi = () => {
-    if (!bolehMembuka || pembukaanTerkunci.current) return;
-    setGagalMembuka(false);
-    setKonfirmasiTerbuka(true);
-  };
-
-  const konfirmasiPembukaan = () => {
-    if (pembukaanTerkunci.current) return;
-    const terkini = sessions.find((item) => item.id === sesi.id);
-    if (currentUser?.role !== "ASISTEN" || terkini?.status !== "BELUM_DIBUKA") {
+  const konfirmasiPembukaan = async () => {
+    if (!sesi.id || sesi.status !== "BELUM_DIBUKA") {
       setKonfirmasiTerbuka(false);
       return;
     }
-
-    // Cegah dua event konfirmasi sebelum pembaruan context selesai dirender.
-    pembukaanTerkunci.current = true;
+    setMemproses(true);
+    setGagal(null);
     try {
-      bukaSesi(sesi.id);
-      setPembukaanDiminta(true);
+      await bukaSesi(sesi.id);
       setKonfirmasiTerbuka(false);
-    } catch {
-      pembukaanTerkunci.current = false;
-      setPembukaanDiminta(false);
-      setKonfirmasiTerbuka(false);
-      setGagalMembuka(true);
+    } catch (e) {
+      setGagal(pesanError(e));
+    } finally {
+      setMemproses(false);
     }
   };
 
@@ -55,23 +44,25 @@ export function PembukaanSesi({ sesi }: { sesi: Session }) {
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: !asisten || pembukaanDiminta }}
-            disabled={!asisten || pembukaanDiminta}
-            onPress={tampilkanKonfirmasi}
+            accessibilityState={{ disabled: !asisten || memproses }}
+            disabled={!asisten || memproses}
+            onPress={() => setKonfirmasiTerbuka(true)}
             style={({ pressed }) => [
               styles.button,
-              (!asisten || pembukaanDiminta) && styles.disabled,
+              (!asisten || memproses) && styles.disabled,
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.buttonText}>Buka Sesi</Text>
+            <Text style={styles.buttonText}>
+              {memproses ? "Membuka..." : "Buka Sesi"}
+            </Text>
           </Pressable>
           {!asisten ? (
             <Text style={styles.description}>
               Masuk sebagai asisten untuk membuka sesi.
             </Text>
           ) : null}
-          {!currentUser ? (
+          {!user ? (
             <Link href="/" push asChild>
               <Pressable accessibilityRole="link" style={styles.loginLink}>
                 <Text style={styles.linkText}>Ke halaman masuk</Text>
@@ -81,9 +72,7 @@ export function PembukaanSesi({ sesi }: { sesi: Session }) {
         </>
       ) : sesi.status === "DIBUKA" ? (
         <Text accessibilityLiveRegion="polite" style={styles.active}>
-          {pembukaanDiminta
-            ? "Sesi berhasil dibuka. Praktikan sekarang dapat melakukan presensi."
-            : "Sesi sedang aktif. Praktikan dapat melakukan presensi."}
+          Sesi sedang aktif. Praktikan dapat melakukan presensi.
         </Text>
       ) : (
         <Text style={styles.description}>
@@ -91,14 +80,14 @@ export function PembukaanSesi({ sesi }: { sesi: Session }) {
         </Text>
       )}
 
-      {gagalMembuka && sesi.status === "BELUM_DIBUKA" ? (
+      {gagal && sesi.status === "BELUM_DIBUKA" ? (
         <Text accessibilityRole="alert" style={styles.error}>
-          Sesi belum berhasil dibuka. Silakan coba lagi.
+          {gagal}
         </Text>
       ) : null}
 
       <KonfirmasiBukaSesi
-        visible={konfirmasiTerbuka && bolehMembuka}
+        visible={konfirmasiTerbuka && bolehMembuka && !memproses}
         namaPraktikum={sesi.namaPraktikum?.trim() || "Praktikum"}
         onBatal={() => setKonfirmasiTerbuka(false)}
         onKonfirmasi={konfirmasiPembukaan}

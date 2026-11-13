@@ -1,11 +1,19 @@
+// src/components/praktikan/FormPresensi.tsx
+// NOTE: tipe disesuaikan ke Sprint 2. Implementasi presensi praktikan (alur
+// pengajuan/presensi) menjadi tanggung jawab Fauzan.
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import type { Session } from "../../context/DataSistem";
+import type { Sesi, StatusKehadiran } from "../../types";
 
-type Props = { sesi: Session; visible: boolean; onClose: () => void; onSubmit: (status: "Hadir" | "Izin", catatan: string) => boolean };
+type Props = {
+  sesi: Sesi;
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (status: StatusKehadiran, catatan: string) => boolean;
+};
 
 export function FormPresensi({ sesi, visible, onClose, onSubmit }: Props) {
-  const [status, setStatus] = useState<"Hadir" | "Izin">("Hadir");
+  const [status, setStatus] = useState<StatusKehadiran>("Hadir");
   const [catatan, setCatatan] = useState("");
   const [error, setError] = useState("");
 

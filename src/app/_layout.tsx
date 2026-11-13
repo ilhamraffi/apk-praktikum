@@ -1,12 +1,12 @@
 import { Stack } from "expo-router";
-import { AttendanceProvider } from "../context/DataSistem";
+import { AuthProvider } from "../context/AuthContext";
 
 export default function RootLayout() {
   return (
-    <AttendanceProvider>
+    <AuthProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
       </Stack>
-    </AttendanceProvider>
+    </AuthProvider>
   );
 }

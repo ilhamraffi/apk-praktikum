@@ -1,5 +1,7 @@
+// src/components/asisten/RekapPresensi.tsx
 import { StyleSheet, Text, View } from "react-native";
-import type { Session, SessionStatus } from "../../context/DataSistem";
+import type { CatatanPresensi, SessionStatus } from "../../types";
+import { ErrorBanner, Loading } from "../shared/StatusLayar";
 import { formatWaktuPresensi, hitungRekapPresensi } from "./dataRekapPresensi";
 
 const pesanKosong: Record<SessionStatus, string> = {
@@ -9,8 +11,22 @@ const pesanKosong: Record<SessionStatus, string> = {
   DITUTUP: "Tidak ada presensi yang tercatat pada sesi ini.",
 };
 
-export function RekapPresensi({ sesi }: { sesi: Session }) {
-  const rekap = hitungRekapPresensi(sesi.presensi, sesi.totalPraktikan);
+type RekapPresensiProps = {
+  catatan: CatatanPresensi[];
+  totalPraktikan: number;
+  status: SessionStatus;
+  loading?: boolean;
+  error?: string | null;
+};
+
+export function RekapPresensi({
+  catatan,
+  totalPraktikan,
+  status,
+  loading,
+  error,
+}: RekapPresensiProps) {
+  const rekap = hitungRekapPresensi(catatan, totalPraktikan);
 
   return (
     <View style={styles.card}>
@@ -20,88 +36,98 @@ export function RekapPresensi({ sesi }: { sesi: Session }) {
       <Text style={styles.total}>
         Total praktikan terdaftar: {rekap.total ?? "belum tersedia"}
       </Text>
-      <View accessibilityLiveRegion="polite" style={styles.summary}>
-        <Text style={styles.ratio}>
-          {rekap.total === null
-            ? `${rekap.jumlahHadir} praktikan hadir`
-            : `${rekap.jumlahHadir} dari ${rekap.total} praktikan hadir`}
-        </Text>
-        {rekap.persentase !== null ? (
-          <>
-            <Text style={styles.percentage}>
-              {rekap.persentase}% Kehadiran
-            </Text>
-            <View
-              accessibilityRole="progressbar"
-              accessibilityLabel="Persentase kehadiran"
-              accessibilityValue={{
-                min: 0,
-                max: 100,
-                now: Math.min(rekap.persentase, 100),
-                text: `${rekap.persentase}% kehadiran`,
-              }}
-              style={styles.track}
-            >
-              <View
-                style={[
-                  styles.progress,
-                  { width: `${Math.min(rekap.persentase, 100)}%` },
-                ]}
-              />
-            </View>
-          </>
-        ) : null}
-        {rekap.jumlahIzin > 0 ? (
-          <Text style={styles.secondary}>
-            {rekap.jumlahIzin} praktikan izin, tidak dihitung sebagai hadir.
-          </Text>
-        ) : null}
-      </View>
 
-      {rekap.jumlahDiabaikan > 0 ? (
-        <Text style={styles.warning}>
-          {rekap.jumlahDiabaikan} catatan duplikat atau tidak valid tidak dihitung.
-        </Text>
-      ) : null}
-      {rekap.total !== null && rekap.jumlahHadir > rekap.total ? (
-        <Text style={styles.warning}>
-          Jumlah hadir melebihi total praktikan. Data sesi perlu diperiksa.
-        </Text>
-      ) : null}
-
-      {rekap.catatan.length === 0 ? (
-        <Text accessibilityLiveRegion="polite" style={styles.empty}>
-          {pesanKosong[sesi.status]}
-        </Text>
+      {loading ? (
+        <Loading label="Memuat presensi..." />
+      ) : error ? (
+        <ErrorBanner message={error} />
       ) : (
-        <View style={styles.list}>
-          {rekap.catatan.map(({ key, presensi }) => {
-            const hadir = presensi.statusKehadiran === "Hadir";
-            return (
-              <View key={key} style={styles.student}>
-                <Text style={styles.name}>
-                  {presensi.nama?.trim() || "Nama tidak tersedia"}
+        <>
+          <View accessibilityLiveRegion="polite" style={styles.summary}>
+            <Text style={styles.ratio}>
+              {rekap.total === null
+                ? `${rekap.jumlahHadir} praktikan hadir`
+                : `${rekap.jumlahHadir} dari ${rekap.total} praktikan hadir`}
+            </Text>
+            {rekap.persentase !== null ? (
+              <>
+                <Text style={styles.percentage}>
+                  {rekap.persentase}% Kehadiran
                 </Text>
-                <Text style={styles.secondary}>
-                  {presensi.nim?.trim() || "NIM belum tersedia"}
-                </Text>
-                <View style={styles.recordMeta}>
-                  <Text
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityLabel="Persentase kehadiran"
+                  accessibilityValue={{
+                    min: 0,
+                    max: 100,
+                    now: Math.min(rekap.persentase, 100),
+                    text: `${rekap.persentase}% kehadiran`,
+                  }}
+                  style={styles.track}
+                >
+                  <View
                     style={[
-                      styles.attendanceBadge,
-                      hadir ? styles.present : styles.excused,
+                      styles.progress,
+                      { width: `${Math.min(rekap.persentase, 100)}%` },
                     ]}
-                  >
-                    {presensi.statusKehadiran}
-                  </Text>
-                  <Text style={styles.time}>
-                    Waktu presensi: {formatWaktuPresensi(presensi.waktu)}
-                  </Text>
+                  />
                 </View>
-              </View>
-            );
-          })}
-        </View>
+              </>
+            ) : null}
+            {rekap.jumlahIzin > 0 ? (
+              <Text style={styles.secondary}>
+                {rekap.jumlahIzin} praktikan izin, tidak dihitung sebagai hadir.
+              </Text>
+            ) : null}
+          </View>
+
+          {rekap.jumlahDiabaikan > 0 ? (
+            <Text style={styles.warning}>
+              {rekap.jumlahDiabaikan} catatan duplikat atau tidak valid tidak
+              dihitung.
+            </Text>
+          ) : null}
+          {rekap.total !== null && rekap.jumlahHadir > rekap.total ? (
+            <Text style={styles.warning}>
+              Jumlah hadir melebihi total praktikan. Data sesi perlu diperiksa.
+            </Text>
+          ) : null}
+
+          {rekap.catatan.length === 0 ? (
+            <Text accessibilityLiveRegion="polite" style={styles.empty}>
+              {pesanKosong[status]}
+            </Text>
+          ) : (
+            <View style={styles.list}>
+              {rekap.catatan.map(({ key, presensi }) => {
+                const hadir = presensi.statusKehadiran === "Hadir";
+                return (
+                  <View key={key} style={styles.student}>
+                    <Text style={styles.name}>
+                      {presensi.nama?.trim() || "Nama tidak tersedia"}
+                    </Text>
+                    <Text style={styles.secondary}>
+                      {presensi.nim?.trim() || "NIM belum tersedia"}
+                    </Text>
+                    <View style={styles.recordMeta}>
+                      <Text
+                        style={[
+                          styles.attendanceBadge,
+                          hadir ? styles.present : styles.excused,
+                        ]}
+                      >
+                        {presensi.statusKehadiran}
+                      </Text>
+                      <Text style={styles.time}>
+                        Waktu presensi: {formatWaktuPresensi(presensi.waktu)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </>
       )}
     </View>
   );

@@ -1,18 +1,24 @@
+// src/components/praktikan/KartuJadwal.tsx
+// NOTE: adaptasi minimal agar kompatibel dengan tipe Sprint 2. Pemfilteran
+// jadwal per kelas praktikan menjadi tanggung jawab Fauzan.
 import { Link } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import type { Session } from "../../context/DataSistem";
+import type { Sesi } from "../../types";
 import { InformasiSesi } from "../asisten/InformasiSesi";
 import { StatusSesi } from "../asisten/StatusSesi";
 
-export function KartuJadwalPraktikan({ sesi }: { sesi: Session }) {
+export function KartuJadwalPraktikan({
+  sesi,
+  kelasLabel,
+}: {
+  sesi: Sesi;
+  kelasLabel?: string;
+}) {
   return (
-    <Link
-      href={`/praktikan/${sesi.id}`}
-      asChild
-    >
+    <Link href={`/praktikan/${sesi.id}`} asChild>
       <TouchableOpacity
         accessibilityRole="link"
-        accessibilityLabel={`Lihat detail ${sesi.namaPraktikum}, kelas ${sesi.kelas}`}
+        accessibilityLabel={`Lihat detail ${sesi.namaPraktikum}, kelas ${kelasLabel ?? "-"}`}
         activeOpacity={0.85}
         style={styles.card}
       >
@@ -21,7 +27,7 @@ export function KartuJadwalPraktikan({ sesi }: { sesi: Session }) {
           <Text style={styles.title}>{sesi.namaPraktikum}</Text>
           <Text style={styles.module}>{sesi.modul}</Text>
         </View>
-        <InformasiSesi sesi={sesi} />
+        <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
         <View style={styles.action}>
           <Text style={styles.actionText}>Lihat detail & presensi</Text>
           <Text accessible={false} style={styles.arrow}>›</Text>
