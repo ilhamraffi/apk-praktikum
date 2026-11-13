@@ -1,47 +1,36 @@
-import { useEffect, useRef, useState } from "react";
+// src/components/asisten/PenutupanSesi.tsx
+import { useState } from "react";
 import { Link } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useAttendance, type Session } from "../../context/DataSistem";
+import { useAuth } from "../../context/AuthContext";
+import { tutupSesi } from "../../hooks/useSesi";
+import { pesanError } from "../../lib/errors";
+import type { Sesi } from "../../types";
 import { KonfirmasiTutupSesi } from "./KonfirmasiTutupSesi";
 
-export function PenutupanSesi({ sesi }: { sesi: Session }) {
-  const { currentUser, sessions, tutupSesi } = useAttendance();
+export function PenutupanSesi({ sesi }: { sesi: Sesi }) {
+  const { user, role } = useAuth();
   const [konfirmasiTerbuka, setKonfirmasiTerbuka] = useState(false);
-  const [penutupanDiminta, setPenutupanDiminta] = useState(false);
-  const [gagalMenutup, setGagalMenutup] = useState(false);
-  const penutupanTerkunci = useRef(false);
-  const asisten = currentUser?.role === "ASISTEN";
+  const [memproses, setMemproses] = useState(false);
+  const [gagal, setGagal] = useState<string | null>(null);
+
+  const asisten = role === "ASISTEN";
   const bolehMenutup = asisten && sesi.status === "DIBUKA";
 
-  useEffect(() => {
-    if (!bolehMenutup) setKonfirmasiTerbuka(false);
-  }, [bolehMenutup]);
-
-  const tampilkanKonfirmasi = () => {
-    if (!bolehMenutup || penutupanTerkunci.current) return;
-    setGagalMenutup(false);
-    setKonfirmasiTerbuka(true);
-  };
-
-  const konfirmasiPenutupan = () => {
-    if (penutupanTerkunci.current) return;
-    const terkini = sessions.find((item) => item.id === sesi.id);
-    if (currentUser?.role !== "ASISTEN" || terkini?.status !== "DIBUKA") {
+  const konfirmasiPenutupan = async () => {
+    if (!sesi.id || sesi.status !== "DIBUKA") {
       setKonfirmasiTerbuka(false);
       return;
     }
-
-    // Cegah dua event konfirmasi sebelum pembaruan context selesai dirender.
-    penutupanTerkunci.current = true;
+    setMemproses(true);
+    setGagal(null);
     try {
-      tutupSesi(sesi.id);
-      setPenutupanDiminta(true);
+      await tutupSesi(sesi.id);
       setKonfirmasiTerbuka(false);
-    } catch {
-      penutupanTerkunci.current = false;
-      setPenutupanDiminta(false);
-      setKonfirmasiTerbuka(false);
-      setGagalMenutup(true);
+    } catch (e) {
+      setGagal(pesanError(e));
+    } finally {
+      setMemproses(false);
     }
   };
 
@@ -60,23 +49,25 @@ export function PenutupanSesi({ sesi }: { sesi: Session }) {
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: !asisten || penutupanDiminta }}
-            disabled={!asisten || penutupanDiminta}
-            onPress={tampilkanKonfirmasi}
+            accessibilityState={{ disabled: !asisten || memproses }}
+            disabled={!asisten || memproses}
+            onPress={() => setKonfirmasiTerbuka(true)}
             style={({ pressed }) => [
               styles.button,
-              (!asisten || penutupanDiminta) && styles.disabled,
+              (!asisten || memproses) && styles.disabled,
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.buttonText}>Tutup Sesi</Text>
+            <Text style={styles.buttonText}>
+              {memproses ? "Menutup..." : "Tutup Sesi"}
+            </Text>
           </Pressable>
           {!asisten ? (
             <Text style={styles.description}>
               Masuk sebagai asisten untuk menutup sesi.
             </Text>
           ) : null}
-          {!currentUser ? (
+          {!user ? (
             <Link href="/" push asChild>
               <Pressable accessibilityRole="link" style={styles.loginLink}>
                 <Text style={styles.linkText}>Ke halaman masuk</Text>
@@ -87,9 +78,7 @@ export function PenutupanSesi({ sesi }: { sesi: Session }) {
       ) : (
         <View accessibilityLiveRegion="polite" style={styles.closed}>
           <Text style={styles.closedText}>
-            {penutupanDiminta
-              ? "Sesi berhasil ditutup. Praktikan tidak dapat melakukan presensi lagi."
-              : "Sesi ini sudah ditutup. Praktikan tidak dapat melakukan presensi lagi."}
+            Sesi ini sudah ditutup. Praktikan tidak dapat melakukan presensi lagi.
           </Text>
           <Text style={styles.closedText}>
             Rekap kehadiran tetap tersedia di bawah. Sesi tidak dapat dibuka kembali.
@@ -97,14 +86,14 @@ export function PenutupanSesi({ sesi }: { sesi: Session }) {
         </View>
       )}
 
-      {gagalMenutup && sesi.status === "DIBUKA" ? (
+      {gagal && sesi.status === "DIBUKA" ? (
         <Text accessibilityRole="alert" style={styles.error}>
-          Sesi belum berhasil ditutup. Silakan coba lagi.
+          {gagal}
         </Text>
       ) : null}
 
       <KonfirmasiTutupSesi
-        visible={konfirmasiTerbuka && bolehMenutup}
+        visible={konfirmasiTerbuka && bolehMenutup && !memproses}
         namaPraktikum={sesi.namaPraktikum?.trim() || "Praktikum"}
         onBatal={() => setKonfirmasiTerbuka(false)}
         onKonfirmasi={konfirmasiPenutupan}

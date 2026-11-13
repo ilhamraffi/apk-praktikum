@@ -1,20 +1,30 @@
-import type { AttendanceRecord } from "../../context/DataSistem";
+// src/components/asisten/dataRekapPresensi.ts
+import type { CatatanPresensi } from "../../types";
 
 function teks(nilai: unknown): string {
   return typeof nilai === "string" ? nilai.trim() : "";
 }
 
+export interface RekapPresensi {
+  catatan: { key: string; presensi: CatatanPresensi }[];
+  jumlahHadir: number;
+  jumlahIzin: number;
+  total: number | null;
+  persentase: number | null;
+  jumlahDiabaikan: number;
+}
+
 export function hitungRekapPresensi(
-  presensi: readonly AttendanceRecord[],
+  presensi: readonly CatatanPresensi[],
   totalPraktikan: number,
-) {
+): RekapPresensi {
   const userIds = new Set<string>();
   const nims = new Set<string>();
-  const catatan: { key: string; presensi: AttendanceRecord }[] = [];
+  const catatan: { key: string; presensi: CatatanPresensi }[] = [];
   let jumlahDiabaikan = 0;
 
   for (const item of presensi) {
-    const userId = teks(item?.userId);
+    const userId = teks(item?.uid);
     const nim = teks(item?.nim);
     const statusValid =
       item?.statusKehadiran === "Hadir" || item?.statusKehadiran === "Izin";
@@ -29,7 +39,6 @@ export function hitungRekapPresensi(
       continue;
     }
 
-    // Context hanya mengizinkan satu presensi. Pertahankan catatan valid pertama.
     if (userId) userIds.add(userId);
     if (nim) nims.add(nim);
     catatan.push({
@@ -52,7 +61,25 @@ export function hitungRekapPresensi(
   return { catatan, jumlahHadir, jumlahIzin, total, persentase, jumlahDiabaikan };
 }
 
-export function formatWaktuPresensi(nilai: string | null | undefined): string {
+/** Format waktu presensi (menerima Timestamp Firestore atau string). */
+export function formatWaktuPresensi(nilai: unknown): string {
+  // Timestamp Firestore (objek dengan toDate()).
+  if (nilai && typeof nilai === "object" && typeof (nilai as { toDate?: unknown }).toDate === "function") {
+    const tanggal = (nilai as { toDate(): Date }).toDate();
+    if (!Number.isFinite(tanggal.getTime())) return "Waktu tidak tersedia";
+    return (
+      tanggal
+        .toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+          timeZone: "Asia/Jakarta",
+        })
+        .replace(/\./g, ":") + " WIB"
+    );
+  }
+
   const waktu = teks(nilai);
   const jam = waktu.match(
     /^([01]\d|2[0-3])[:.]([0-5]\d)(?:[:.]([0-5]\d))?(?:\s+(WIB|WITA|WIT))?$/i,

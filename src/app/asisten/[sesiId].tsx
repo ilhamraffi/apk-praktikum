@@ -1,19 +1,83 @@
-import { Link, useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Link, router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FormSesi } from "../../components/asisten/FormSesi";
 import { InformasiSesi } from "../../components/asisten/InformasiSesi";
-import { StatusSesi } from "../../components/asisten/StatusSesi";
+import { KonfirmasiHapus } from "../../components/asisten/KonfirmasiHapus";
 import { PembukaanSesi } from "../../components/asisten/PembukaanSesi";
 import { PenutupanSesi } from "../../components/asisten/PenutupanSesi";
 import { RekapPresensi } from "../../components/asisten/RekapPresensi";
-import { useAttendance } from "../../context/DataSistem";
+import { StatusSesi } from "../../components/asisten/StatusSesi";
+import { Loading } from "../../components/shared/StatusLayar";
+import { useWajibAsisten } from "../../hooks/useWajibAsisten";
+import { useDaftarKelas } from "../../hooks/useKelas";
+import { usePresensiSesi } from "../../hooks/usePresensi";
+import {
+  hapusSesi,
+  perbaruiSesi,
+  useSesiDetail,
+} from "../../hooks/useSesi";
 
 export default function DetailSesiAsistenScreen() {
   const { sesiId } = useLocalSearchParams<{ sesiId?: string | string[] }>();
-  const { sessions } = useAttendance();
   const id = typeof sesiId === "string" ? sesiId.trim() : undefined;
-  const sesi = id ? sessions.find((item) => item.id === id) : undefined;
+
+  const { loading: loadingAuth, boleh } = useWajibAsisten();
+  const { sesi, kelas, totalPraktikan, loading } = useSesiDetail(id);
+  const { catatan, loading: loadingPresensi, error: errorPresensi } =
+    usePresensiSesi(id);
+  const { mapKelas } = useDaftarKelas();
+
+  const [formTerbuka, setFormTerbuka] = useState(false);
+  const [hapusTerbuka, setHapusTerbuka] = useState(false);
+  const [memprosesHapus, setMemprosesHapus] = useState(false);
+
+  if (loadingAuth || (loading && !sesi)) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <Loading />
+      </SafeAreaView>
+    );
+  }
+
+  if (!boleh) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <View style={styles.denied}>
+          <Text style={styles.deniedTitle}>Akses ditolak</Text>
+          <Text style={styles.deniedText}>
+            Halaman ini hanya untuk asisten.
+          </Text>
+          <Link href="/" asChild>
+            <TouchableOpacity style={styles.deniedBtn}>
+              <Text style={styles.deniedBtnText}>Ke halaman masuk</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const kelasLabel = kelas ? `${kelas.nama} (${kelas.kode})` : undefined;
   const modul = sesi?.modul?.trim();
+
+  const konfirmasiHapus = async () => {
+    if (!sesi?.id) return;
+    setMemprosesHapus(true);
+    try {
+      await hapusSesi(sesi.id);
+      router.replace("/asisten");
+    } finally {
+      setMemprosesHapus(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.page}>
@@ -44,17 +108,39 @@ export default function DetailSesiAsistenScreen() {
             </View>
 
             <View style={styles.infoCard}>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                Informasi praktikum
-              </Text>
-              <InformasiSesi sesi={sesi} />
+              <View style={styles.infoHeader}>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>
+                  Informasi praktikum
+                </Text>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    onPress={() => setFormTerbuka(true)}
+                  >
+                    <Text style={styles.editText}>Ubah</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => setHapusTerbuka(true)}
+                  >
+                    <Text style={styles.deleteText}>Hapus</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
             </View>
 
             {sesi.status !== "DITUTUP" ? (
               <PembukaanSesi key={`pembukaan-${sesi.id}`} sesi={sesi} />
             ) : null}
             <PenutupanSesi key={`penutupan-${sesi.id}`} sesi={sesi} />
-            <RekapPresensi sesi={sesi} />
+            <RekapPresensi
+              catatan={catatan}
+              totalPraktikan={totalPraktikan}
+              status={sesi.status}
+              loading={loadingPresensi}
+              error={errorPresensi}
+            />
           </>
         ) : (
           <View style={styles.infoCard}>
@@ -69,6 +155,25 @@ export default function DetailSesiAsistenScreen() {
           </View>
         )}
       </ScrollView>
+
+      {formTerbuka && sesi ? (
+        <FormSesi
+          key={sesi.id}
+          awal={sesi}
+          daftarKelas={Array.from(mapKelas.values())}
+          onBatal={() => setFormTerbuka(false)}
+          onSimpan={(input) => perbaruiSesi(sesi.id!, input)}
+        />
+      ) : null}
+
+      <KonfirmasiHapus
+        visible={hapusTerbuka}
+        judul="Hapus sesi?"
+        pesan={`Sesi ${sesi?.namaPraktikum ?? ""} beserta seluruh presensinya akan dihapus. Tindakan ini tidak dapat dibatalkan.`}
+        memproses={memprosesHapus}
+        onBatal={() => setHapusTerbuka(false)}
+        onKonfirmasi={konfirmasiHapus}
+      />
     </SafeAreaView>
   );
 }
@@ -108,6 +213,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
   },
-  sectionTitle: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700", marginBottom: 22 },
+  infoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 22 },
+  sectionTitle: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700" },
+  actionRow: { flexDirection: "row", gap: 8 },
+  editBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" },
+  editText: { color: "#334155", fontSize: 13, fontWeight: "600" },
+  deleteBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
+  deleteText: { color: "#B91C1C", fontSize: 13, fontWeight: "700" },
   emptyTitle: { color: "#0F172A", fontSize: 22, lineHeight: 30, fontWeight: "700", marginTop: 10 },
+  denied: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
+  deniedTitle: { color: "#0F172A", fontSize: 22, fontWeight: "700" },
+  deniedText: { color: "#64748B", fontSize: 15, lineHeight: 24, textAlign: "center" },
+  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#4338CA" },
+  deniedBtnText: { color: "#FFFFFF", fontWeight: "700" },
 });

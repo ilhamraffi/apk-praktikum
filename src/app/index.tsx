@@ -12,64 +12,58 @@ import {
   View,
 } from "react-native";
 import { ActiveUserBar } from "../components/TampilanBersama";
-import { DUMMY_USERS, Role, useAttendance } from "../context/DataSistem";
+import { Loading } from "../components/shared/StatusLayar";
+import { useAuth } from "../context/AuthContext";
+import { pesanError } from "../lib/errors";
 
 export default function RoleSelectionScreen() {
-  const { currentUser, pilihPeran } = useAttendance();
+  const { user, loading, signIn } = useAuth();
 
-  const [selectedRole, setSelectedRole] = useState<Role>("ASISTEN");
-  const [nimInput, setNimInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [memproses, setMemproses] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleRoleChange = (role: Role) => {
-    setSelectedRole(role);
+  const handleMasuk = async () => {
     setErrorMessage("");
-    setNimInput("");
-    setPasswordInput("");
-  };
-
-  const handleMasuk = () => {
-    setErrorMessage("");
-
-    if (!nimInput || !passwordInput) {
-      setErrorMessage("NIM dan Kata Sandi tidak boleh kosong.");
+    if (!email.trim() || !password) {
+      setErrorMessage("Email dan kata sandi tidak boleh kosong.");
       return;
     }
-
-    const nimBersih = nimInput.trim();
-    const passwordBersih = passwordInput.trim();
-
-    const userValid = DUMMY_USERS.find(
-      (u) =>
-        u.role === selectedRole &&
-        u.nim === nimBersih &&
-        u.password === passwordBersih,
-    );
-
-    if (userValid) {
-      pilihPeran(userValid);
-    } else {
-      setErrorMessage("NIM atau Kata Sandi salah, atau peran tidak sesuai.");
+    setMemproses(true);
+    try {
+      await signIn(email, password);
+    } catch (e) {
+      setErrorMessage(pesanError(e));
+    } finally {
+      setMemproses(false);
     }
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Loading label="Memuat..." />
+      </SafeAreaView>
+    );
+  }
+
   // HALAMAN KEDUA (DASHBOARD)
-  if (currentUser) {
+  if (user) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ActiveUserBar />
         <View style={{ padding: 20 }}>
           <Text style={{ fontSize: 22, fontWeight: "bold" }}>
-            Halo, {currentUser.nama}!
+            Halo, {user.nama}!
           </Text>
           <Text style={{ marginTop: 8, color: "#475569" }}>
             Pilih jadwal dan Kelas Praktikum
           </Text>
-          {currentUser.role === "ASISTEN" ? (
+          {user.role === "ASISTEN" ? (
             <Link href="/asisten" asChild>
               <TouchableOpacity accessibilityRole="link" style={styles.submitBtn}>
-                <Text style={styles.submitBtnText}>Lihat Jadwal Praktikum</Text>
+                <Text style={styles.submitBtnText}>Ruang Asisten</Text>
               </TouchableOpacity>
             </Link>
           ) : (
@@ -101,42 +95,20 @@ export default function RoleSelectionScreen() {
         </View>
 
         <Text style={styles.sprintTag}>Hallo</Text>
-        <Text style={styles.heroTitle}>Pilih Peran Mu</Text>
+        <Text style={styles.heroTitle}>Masuk ke HadirLab</Text>
         <Text style={styles.heroSub}>
-          Masuk menggunakan NIM dan kata sandi yang terdaftar.
+          Masuk menggunakan email dan kata sandi yang terdaftar.
         </Text>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Pilih Peran</Text>
-          <View style={styles.roleRow}>
-            {(["ASISTEN", "PRAKTIKAN"] as Role[]).map((r) => {
-              const active = selectedRole === r;
-              return (
-                <TouchableOpacity
-                  key={r}
-                  style={[styles.roleBox, active && styles.roleBoxActive]}
-                  onPress={() => handleRoleChange(r)}
-                >
-                  <Text
-                    style={[
-                      styles.roleBoxText,
-                      active && styles.roleBoxTextActive,
-                    ]}
-                  >
-                    {r === "ASISTEN" ? "Asisten" : "Praktikan"}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <Text style={styles.label}>NIM</Text>
+          <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.inputField}
-            placeholder="Masukkan NIM kamu"
-            keyboardType="numeric"
-            value={nimInput}
-            onChangeText={setNimInput}
+            placeholder="nama@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
           />
 
           <Text style={styles.label}>Kata Sandi</Text>
@@ -144,16 +116,22 @@ export default function RoleSelectionScreen() {
             style={styles.inputField}
             placeholder="Masukkan kata sandi"
             secureTextEntry
-            value={passwordInput}
-            onChangeText={setPasswordInput}
+            value={password}
+            onChangeText={setPassword}
           />
 
           {errorMessage ? (
             <Text style={styles.errorText}>{errorMessage}</Text>
           ) : null}
 
-          <TouchableOpacity style={styles.submitBtn} onPress={handleMasuk}>
-            <Text style={styles.submitBtnText}>Masuk</Text>
+          <TouchableOpacity
+            style={styles.submitBtn}
+            onPress={handleMasuk}
+            disabled={memproses}
+          >
+            <Text style={styles.submitBtnText}>
+              {memproses ? "Memproses..." : "Masuk"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -165,7 +143,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    // Memberikan jarak sebesar tinggi status bar HP
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   page: { flex: 1, backgroundColor: "#F8FAFC" },
@@ -218,18 +195,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 12,
   },
-  roleRow: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  roleBox: {
-    flex: 1,
-    paddingVertical: 10, // Dikurangi dari 14 agar lebih ramping
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    alignItems: "center",
-  },
-  roleBoxActive: { backgroundColor: "#6366F1", borderColor: "#4338CA" },
-  roleBoxText: { fontSize: 15, fontWeight: "bold", color: "#1E293B" },
-  roleBoxTextActive: { color: "#FFFFFF" },
   inputField: {
     borderWidth: 1,
     borderColor: "#CBD5E1",

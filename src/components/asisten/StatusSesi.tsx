@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { SessionStatus } from "../../context/DataSistem";
+import type { SessionStatus } from "../../types";
 
 const tampilanStatus: Record<
   SessionStatus,

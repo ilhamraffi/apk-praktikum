@@ -1,15 +1,11 @@
-// src/components/SharedUI.tsx
+// src/components/TampilanBersama.tsx
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SessionStatus, useAttendance } from "../context/DataSistem";
-
-export function StatusBadge({ status }: { status: SessionStatus }) {
-  // ... (biarkan kode StatusBadge tetap seperti aslinya)
-}
+import { useAuth } from "../context/AuthContext";
 
 export function ActiveUserBar() {
-  const { currentUser, keluarPeran } = useAttendance();
+  const { user, signOut } = useAuth();
 
-  if (!currentUser) return null;
+  if (!user) return null;
 
   return (
     <>
@@ -17,17 +13,17 @@ export function ActiveUserBar() {
       <View style={styles.topBar}>
         <Text style={styles.roleTag}>
           PERAN AKTIF:{" "}
-          {currentUser.role === "ASISTEN" ? " ASISTEN" : " PRAKTIKAN"}
+          {user.role === "ASISTEN" ? " ASISTEN" : " PRAKTIKAN"}
         </Text>
         <Text style={styles.userName} numberOfLines={1}>
-          {currentUser.nama} ({currentUser.nim})
+          {user.nama} ({user.nim})
         </Text>
       </View>
 
-      {/* Tombol Home Melayang di Tengah Bawah */}
+      {/* Tombol Keluar Melayang di Tengah Bawah */}
       <View style={styles.bottomNavContainer}>
-        <TouchableOpacity style={styles.homeBtn} onPress={keluarPeran}>
-          <Text style={styles.homeText}>Home</Text>
+        <TouchableOpacity style={styles.homeBtn} onPress={signOut}>
+          <Text style={styles.homeText}>Keluar</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -35,14 +31,11 @@ export function ActiveUserBar() {
 }
 
 const styles = StyleSheet.create({
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { fontSize: 11, fontWeight: "bold" },
-
   topBar: {
     backgroundColor: "#1E1B4B",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    alignItems: "center", // Pusatkan teks di bar atas
+    alignItems: "center",
   },
   roleTag: {
     color: "#f3f2f8",
@@ -56,17 +49,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 2,
   },
-
-  // Styling Tombol Bawah
   bottomNavContainer: {
     position: "absolute",
     bottom: 30,
     left: 0,
     right: 0,
-    alignItems: "center", // Memastikan posisinya tepat di tengah horizontal
+    alignItems: "center",
   },
   homeBtn: {
-    backgroundColor: "#1E1B4B", // Warna biru selaras dengan tema
+    backgroundColor: "#1E1B4B",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
@@ -76,8 +67,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 5, // Bayangan untuk Android
+    elevation: 5,
   },
-  homeIcon: { fontSize: 18, marginRight: 8 },
   homeText: { color: "#FFFFFF", fontSize: 15, fontWeight: "bold" },
 });

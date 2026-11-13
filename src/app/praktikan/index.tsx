@@ -1,18 +1,57 @@
+// src/app/praktikan/index.tsx
+// NOTE: adaptasi minimal ke Sprint 2. Pemfilteran jadwal per kelas praktikan
+// dan riwayat kehadiran menjadi tanggung jawab Fauzan.
 import { Link } from "expo-router";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KartuJadwalPraktikan } from "../../components/praktikan/KartuJadwal";
-import { useAttendance } from "../../context/DataSistem";
+import { Empty, Loading } from "../../components/shared/StatusLayar";
+import { useAuth } from "../../context/AuthContext";
+import { useDaftarKelas } from "../../hooks/useKelas";
+import { useDaftarSesi } from "../../hooks/useSesi";
 
 export default function JadwalPraktikanScreen() {
-  const { currentUser, sessions } = useAttendance();
+  const { user, loading: loadingAuth } = useAuth();
+  const { sesi, loading } = useDaftarSesi();
+  const { mapKelas } = useDaftarKelas();
+
+  if (loadingAuth) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <Loading />
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <View style={styles.denied}>
+          <Text style={styles.deniedTitle}>Belum masuk</Text>
+          <Text style={styles.deniedText}>Silakan masuk terlebih dahulu.</Text>
+          <Link href="/" asChild>
+            <TouchableOpacity style={styles.deniedBtn}>
+              <Text style={styles.deniedBtnText}>Ke halaman masuk</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const labelKelas = (classId: string) => {
+    const k = mapKelas.get(classId);
+    return k ? `${k.nama} (${k.kode})` : undefined;
+  };
 
   return (
     <SafeAreaView style={styles.page}>
       <FlatList
-        data={sessions}
-        keyExtractor={(sesi) => sesi.id}
-        renderItem={({ item }) => <KartuJadwalPraktikan sesi={item} />}
+        data={sesi}
+        keyExtractor={(item) => item.id ?? ""}
+        renderItem={({ item }) => (
+          <KartuJadwalPraktikan sesi={item} kelasLabel={labelKelas(item.classId)} />
+        )}
         contentContainerStyle={styles.content}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
@@ -25,42 +64,26 @@ export default function JadwalPraktikanScreen() {
               </View>
               <Link href="/" dismissTo asChild>
                 <TouchableOpacity style={styles.dashboardButton} accessibilityRole="link">
-                  <Text style={styles.dashboardText}>{currentUser ? "Dashboard" : "Masuk"}</Text>
+                  <Text style={styles.dashboardText}>Dashboard</Text>
                 </TouchableOpacity>
               </Link>
             </View>
             <View style={styles.headingRow}>
               <Text accessibilityRole="header" style={styles.title}>Jadwal saya</Text>
-              <View style={styles.countBadge}><Text style={styles.countText}>{sessions.length} sesi</Text></View>
+              <View style={styles.countBadge}><Text style={styles.countText}>{sesi.length} sesi</Text></View>
             </View>
-            <Text style={styles.subtitle}>Pilih sesi untuk melihat detail dan riwayat kehadiranmu.</Text>
+            <Text style={styles.subtitle}>Pilih sesi untuk melihat detail.</Text>
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <Text accessibilityRole="header" style={styles.emptyTitle}>Belum ada jadwal</Text>
-            <Text style={styles.emptyText}>Jadwal praktikum akan ditampilkan di sini setelah tersedia.</Text>
-          </View>
-        }
-        ListFooterComponent={
-          <View style={styles.historyCard}>
-            <Text accessibilityRole="header" style={styles.historyTitle}>Riwayat kehadiran saya</Text>
-            {sessions.flatMap((sesi) =>
-              sesi.presensi
-                .filter((record) => record.userId === currentUser?.id)
-                .map((record) => (
-                  <View key={`${sesi.id}-${record.waktu}`} style={styles.historyRow}>
-                    <View style={styles.historyInfo}>
-                      <Text style={styles.historySession}>{sesi.namaPraktikum}</Text>
-                      <Text style={styles.historyTime}>{record.waktu}</Text>
-                    </View>
-                    <Text style={styles.historyStatus}>{record.statusKehadiran}</Text>
-                  </View>
-                )),
-            ).length > 0 ? null : (
-              <Text style={styles.emptyText}>Belum ada catatan kehadiran.</Text>
-            )}
-          </View>
+          loading ? (
+            <Loading />
+          ) : (
+            <Empty
+              title="Belum ada jadwal"
+              description="Jadwal praktikum akan ditampilkan di sini setelah tersedia."
+            />
+          )
         }
       />
     </SafeAreaView>
@@ -85,14 +108,9 @@ const styles = StyleSheet.create({
   countBadge: { backgroundColor: "#E0E7FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
   countText: { color: "#3730A3", fontSize: 12, lineHeight: 18, fontWeight: "600" },
   subtitle: { color: "#64748B", fontSize: 15, lineHeight: 24 },
-  emptyCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 24, gap: 10 },
-  emptyTitle: { color: "#0F172A", fontSize: 18, lineHeight: 26, fontWeight: "700" },
-  emptyText: { color: "#64748B", fontSize: 15, lineHeight: 24 },
-  historyCard: { marginTop: 24, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 20, gap: 14 },
-  historyTitle: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700" },
-  historyRow: { borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  historyInfo: { flex: 1, gap: 2 },
-  historySession: { color: "#0F172A", fontSize: 14, lineHeight: 22, fontWeight: "600" },
-  historyTime: { color: "#64748B", fontSize: 13, lineHeight: 20 },
-  historyStatus: { color: "#166534", backgroundColor: "#DCFCE7", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, fontSize: 12, fontWeight: "700" },
+  denied: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
+  deniedTitle: { color: "#0F172A", fontSize: 22, fontWeight: "700" },
+  deniedText: { color: "#64748B", fontSize: 15, lineHeight: 24, textAlign: "center" },
+  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#4338CA" },
+  deniedBtnText: { color: "#FFFFFF", fontWeight: "700" },
 });

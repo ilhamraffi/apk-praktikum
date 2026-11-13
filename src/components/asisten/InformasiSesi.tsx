@@ -1,13 +1,15 @@
+// src/components/asisten/InformasiSesi.tsx
 import { StyleSheet, Text, View } from "react-native";
-import type { Session } from "../../context/DataSistem";
+import type { Sesi } from "../../types";
 
 type InformasiSesiProps = {
-  sesi: Pick<Session, "kelas" | "waktu" | "ruangan">;
+  sesi: Pick<Sesi, "waktu" | "ruangan">;
+  kelasLabel?: string;
 };
 
-export function InformasiSesi({ sesi }: InformasiSesiProps) {
+export function InformasiSesi({ sesi, kelasLabel }: InformasiSesiProps) {
   const informasi = [
-    { label: "Kelas", nilai: sesi.kelas },
+    { label: "Kelas", nilai: kelasLabel ?? "" },
     { label: "Waktu", nilai: sesi.waktu },
     { label: "Ruangan", nilai: sesi.ruangan },
   ];
