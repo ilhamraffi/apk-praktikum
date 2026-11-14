@@ -1,19 +1,17 @@
 // src/app/praktikan/index.tsx
-// NOTE: adaptasi minimal ke Sprint 2. Pemfilteran jadwal per kelas praktikan
-// dan riwayat kehadiran menjadi tanggung jawab Fauzan.
+// SRS-02 praktikan: jadwal hanya dari kelas yang diikuti pengguna.
 import { Link } from "expo-router";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KartuJadwalPraktikan } from "../../components/praktikan/KartuJadwal";
-import { Empty, Loading } from "../../components/shared/StatusLayar";
+import { Empty, ErrorBanner, Loading } from "../../components/shared/StatusLayar";
 import { useAuth } from "../../context/AuthContext";
-import { useDaftarKelas } from "../../hooks/useKelas";
-import { useDaftarSesi } from "../../hooks/useSesi";
+import { useJadwalPraktikan } from "../../hooks/useJadwalPraktikan";
 
 export default function JadwalPraktikanScreen() {
-  const { user, loading: loadingAuth } = useAuth();
-  const { sesi, loading } = useDaftarSesi();
-  const { mapKelas } = useDaftarKelas();
+  const { user, role, loading: loadingAuth } = useAuth();
+  const uid = !loadingAuth && role === "PRAKTIKAN" ? user?.uid : undefined;
+  const { sesi, kelas, mapKelas, loading, error, dariCache, cobaLagi } = useJadwalPraktikan(uid);
 
   if (loadingAuth) {
     return (
@@ -23,15 +21,21 @@ export default function JadwalPraktikanScreen() {
     );
   }
 
-  if (!user) {
+  if (!user || role !== "PRAKTIKAN" || !user.uid) {
     return (
       <SafeAreaView style={styles.page}>
         <View style={styles.denied}>
-          <Text style={styles.deniedTitle}>Belum masuk</Text>
-          <Text style={styles.deniedText}>Silakan masuk terlebih dahulu.</Text>
+          <Text style={styles.deniedTitle}>{!user ? "Belum masuk" : "Akses tidak tersedia"}</Text>
+          <Text style={styles.deniedText}>
+            {!user
+              ? "Silakan masuk terlebih dahulu."
+              : role !== "PRAKTIKAN"
+                ? "Halaman ini hanya tersedia untuk akun praktikan."
+                : "Identitas akun belum lengkap. Silakan kembali ke dashboard dan masuk ulang."}
+          </Text>
           <Link href="/" asChild>
             <TouchableOpacity style={styles.deniedBtn}>
-              <Text style={styles.deniedBtnText}>Ke halaman masuk</Text>
+              <Text style={styles.deniedBtnText}>{user ? "Ke dashboard" : "Ke halaman masuk"}</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -47,7 +51,7 @@ export default function JadwalPraktikanScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <FlatList
-        data={sesi}
+        data={loading || error ? [] : sesi}
         keyExtractor={(item) => item.id ?? ""}
         renderItem={({ item }) => (
           <KartuJadwalPraktikan sesi={item} kelasLabel={labelKelas(item.classId)} />
@@ -72,16 +76,35 @@ export default function JadwalPraktikanScreen() {
               <Text accessibilityRole="header" style={styles.title}>Jadwal saya</Text>
               <View style={styles.countBadge}><Text style={styles.countText}>{sesi.length} sesi</Text></View>
             </View>
-            <Text style={styles.subtitle}>Pilih sesi untuk melihat detail.</Text>
+            <Text style={styles.subtitle}>Jadwal dari kelas yang kamu ikuti. Pilih sesi untuk melihat detail.</Text>
+            <Link href="/praktikan/riwayat" asChild>
+              <TouchableOpacity style={styles.historyButton} accessibilityRole="link">
+                <Text style={styles.dashboardText}>Riwayat kehadiran saya</Text>
+              </TouchableOpacity>
+            </Link>
+            {dariCache && !error ? (
+              <Text accessibilityRole="status" style={styles.cacheNotice}>
+                Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.
+              </Text>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
-          loading ? (
-            <Loading />
+          error ? (
+            <View style={styles.feedback}>
+              <ErrorBanner message={error} />
+              <TouchableOpacity onPress={cobaLagi} style={styles.dashboardButton} accessibilityRole="button">
+                <Text style={styles.dashboardText}>Coba lagi</Text>
+              </TouchableOpacity>
+            </View>
+          ) : loading ? (
+            <Loading label="Memuat kelas dan jadwalmu..." />
           ) : (
             <Empty
-              title="Belum ada jadwal"
-              description="Jadwal praktikum akan ditampilkan di sini setelah tersedia."
+              title={kelas.length ? "Belum ada jadwal" : "Belum terdaftar di kelas"}
+              description={kelas.length
+                ? "Belum ada sesi praktikum untuk kelas yang kamu ikuti."
+                : "Hubungi asisten untuk menambahkan akunmu sebagai peserta kelas."}
             />
           )
         }
@@ -108,6 +131,9 @@ const styles = StyleSheet.create({
   countBadge: { backgroundColor: "#E0E7FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
   countText: { color: "#3730A3", fontSize: 12, lineHeight: 18, fontWeight: "600" },
   subtitle: { color: "#64748B", fontSize: 15, lineHeight: 24 },
+  cacheNotice: { color: "#92400E", fontSize: 13, lineHeight: 21, marginTop: 12 },
+  feedback: { gap: 12 },
+  historyButton: { alignSelf: "flex-start", minHeight: 48, justifyContent: "center", marginTop: 8 },
   denied: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
   deniedTitle: { color: "#0F172A", fontSize: 22, fontWeight: "700" },
   deniedText: { color: "#64748B", fontSize: 15, lineHeight: 24, textAlign: "center" },
