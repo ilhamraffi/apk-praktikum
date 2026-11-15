@@ -4,18 +4,55 @@ import {
   doc,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
-  updateDoc,
   where,
 } from "@react-native-firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
-import { klasifikasikanAlasan } from "../lib/ai";
+import { klasifikasikanAlasan, TeksTidakDikenaliEDOM } from "../lib/ai";
 import type { PengajuanIzin } from "../types";
 import { bacaPengajuanIzin, urutkanIzin } from "../utils/izinAsisten";
 
 const BATAS_ALASAN = 1000;
+
+/** Analisis izin milik sendiri yang masih pending. Transaksi membaca alasan
+ * terbaru dan tidak mengubah keputusan, termasuk saat asisten memutuskan
+ * bersamaan dengan analisis. Callback hanya menjalankan model lokal. */
+export async function analisisUlangIzinPraktikan(input: { uid: string; izinId: string }): Promise<void> {
+  const { uid, izinId } = input;
+  if (!uid || !izinId || uid.includes("/") || izinId.includes("/")) {
+    throw new Error("Identitas akun atau pengajuan tidak valid.");
+  }
+  const cekAkun = () => {
+    if (auth.currentUser?.uid !== uid) throw new Error("Sesi akun berubah. Silakan masuk ulang.");
+  };
+  cekAkun();
+  const izinRef = doc(db, "permissions", izinId);
+  await runTransaction(db, async (transaksi) => {
+    cekAkun();
+    const profil = await transaksi.get(doc(db, "users", uid));
+    if (!profil.exists() || profil.data()?.role !== "PRAKTIKAN") {
+      throw new Error("Analisis izin hanya tersedia untuk akun praktikan.");
+    }
+    const snapshot = await transaksi.get(izinRef);
+    if (!snapshot.exists()) throw new Error("Pengajuan izin tidak ditemukan.");
+    const pengajuan = bacaPengajuanIzin(izinId, snapshot.data());
+    if (pengajuan.uid !== uid) throw new Error("Pengajuan ini bukan milik akunmu.");
+    if (pengajuan.status !== "pending") throw new Error("Pengajuan sudah diputuskan dan tidak dapat dianalisis ulang.");
+
+    let kategoriAI: string | null = null;
+    let statusAI = "success";
+    try {
+      kategoriAI = await klasifikasikanAlasan(pengajuan.alasan);
+    } catch (error) {
+      statusAI = error instanceof TeksTidakDikenaliEDOM ? "unknown_vocabulary" : "failed";
+    }
+    cekAkun();
+    transaksi.update(izinRef, { kategoriAI, statusAI });
+  });
+}
 
 export async function ajukanIzinPraktikan(input: {
   uid: string;
@@ -46,15 +83,11 @@ export async function ajukanIzinPraktikan(input: {
   });
 
   try {
-    const kategori = await klasifikasikanAlasan(alasan);
-    await updateDoc(izinRef, { kategoriAI: kategori, statusAI: "success" });
+    await analisisUlangIzinPraktikan({ uid: input.uid, izinId: izinRef.id });
   } catch {
-    // Pengajuan sudah tersimpan; kegagalan AI tidak boleh menggagalkan izin.
-    try {
-      await updateDoc(izinRef, { statusAI: "failed" });
-    } catch {
-      // Status pending tetap dapat dipantau walaupun pembaruan status AI gagal.
-    }
+    // Pengajuan sudah tersimpan. Kegagalan sinkronisasi analisis atau keputusan
+    // asisten yang datang lebih dulu tidak membatalkan pengajuan. Praktikan
+    // dapat memakai tombol analisis ulang selama pengajuan masih pending.
   }
 }
 

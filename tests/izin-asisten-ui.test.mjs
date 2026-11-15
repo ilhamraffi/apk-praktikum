@@ -209,10 +209,10 @@ test("informasi AI kosong dan referensi profil/sesi hilang ditampilkan tanpa cra
   const source = loadSource("src/components/asisten/izin/InformasiPengajuanIzin.tsx", {
     "react/jsx-runtime": runtime, "react-native": native, "../../../utils/izinAsisten": util,
     "../../../hooks/useReferensiIzinAsisten": { useReferensiIzinAsisten: () => ({ data: null, loading: false, error: null, cobaLagi: () => {} }) },
+    "../../izin/HasilAnalisisIzin": { HasilAnalisisIzin: "HasilAnalisisIzin" },
   });
   const reason = source.AlasanPengajuanIzin({ pengajuan });
-  assert.match(textOf(reason), /Kategori belum tersedia/);
-  assert.match(textOf(reason), /Keputusan tetap ditentukan asisten/);
+  assert.equal(nodesOf(reason).find((node) => node.type === "HasilAnalisisIzin").props.pengajuan, pengajuan);
   const identity = source.IdentitasPengajuanIzin({ asistenUid: "asisten-a", pengajuan });
   assert.match(textOf(identity), /Profil praktikan tidak ditemukan/);
   assert.match(textOf(identity), /Sesi tidak ditemukan/);
