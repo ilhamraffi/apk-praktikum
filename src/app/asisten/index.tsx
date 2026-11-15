@@ -107,6 +107,11 @@ export default function JadwalAsistenScreen() {
                   <Text style={styles.secondaryText}>Kelola kelas & peserta</Text>
                 </TouchableOpacity>
               </Link>
+              <Link href="/asisten/izin" asChild>
+                <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn}>
+                  <Text style={styles.secondaryText}>Pemeriksaan izin</Text>
+                </TouchableOpacity>
+              </Link>
             </View>
 
             {error ? <ErrorBanner message={error} /> : null}
