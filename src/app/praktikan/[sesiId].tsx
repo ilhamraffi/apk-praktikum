@@ -102,6 +102,11 @@ export default function DetailSesiPraktikanScreen() {
               <Text accessibilityRole="header" style={styles.sectionTitle}>Presensi</Text>
               <BagianPresensiPraktikan key={`${uid}:${id}`} uid={user.uid} sesi={sesi} dariCache={dariCache} />
             </View>
+            <Link href={{ pathname: "/praktikan/izin", params: { sesiId: id } }} asChild>
+              <TouchableOpacity style={styles.backButton} accessibilityRole="link">
+                <Text style={styles.backText}>Ajukan izin untuk sesi ini</Text>
+              </TouchableOpacity>
+            </Link>
             <Link href="/praktikan/riwayat" asChild>
               <TouchableOpacity style={styles.backButton} accessibilityRole="link">
                 <Text style={styles.backText}>Lihat riwayat kehadiran</Text>

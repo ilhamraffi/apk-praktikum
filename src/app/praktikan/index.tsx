@@ -82,6 +82,11 @@ export default function JadwalPraktikanScreen() {
                 <Text style={styles.dashboardText}>Riwayat kehadiran saya</Text>
               </TouchableOpacity>
             </Link>
+            <Link href="/praktikan/izin" asChild>
+              <TouchableOpacity style={styles.historyButton} accessibilityRole="link">
+                <Text style={styles.dashboardText}>Pengajuan izin saya</Text>
+              </TouchableOpacity>
+            </Link>
             {dariCache && !error ? (
               <Text accessibilityRole="status" style={styles.cacheNotice}>
                 Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.

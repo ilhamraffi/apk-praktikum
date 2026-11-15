@@ -25,7 +25,7 @@ interface SignUpInput {
   nim: string;
   email: string;
   password: string;
-  role?: Role;
+  
 }
 
 interface AuthContextValue {
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: profil?.role ?? null,
       loading,
       signUp: async (input) => {
-        const { nama, nim, email, password, role = "PRAKTIKAN" } = input;
+        const { nama, nim, email, password } = input;
         const credential = await createUserWithEmailAndPassword(
           auth,
           email.trim(),
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           nama: nama.trim(),
           nim: nim.trim(),
           email: email.trim(),
-          role,
+          role: "PRAKTIKAN",
         };
         await setDoc(doc(db, "users", credential.user.uid), profilBaru);
         // Set langsung agar tidak menunggu listener onAuthStateChanged.
