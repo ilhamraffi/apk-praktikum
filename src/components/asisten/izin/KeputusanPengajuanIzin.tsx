@@ -64,7 +64,7 @@ export function KeputusanPengajuanIzin({ asistenUid, pengajuan, dariCache, tertu
   return (
     <View style={styles.panel}>
       <Text accessibilityRole="header" style={styles.title}>Keputusan asisten</Text>
-      {pesanNonaktif ? <Text accessibilityRole="status" style={styles.notice}>{pesanNonaktif}</Text> : null}
+      {pesanNonaktif ? <Text style={styles.notice}>{pesanNonaktif}</Text> : null}
       {error ? <ErrorBanner message={error} /> : null}
       {pilihan ? (
         <View style={styles.section}>
