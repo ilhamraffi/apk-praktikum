@@ -2,6 +2,8 @@ import { Link, useLocalSearchParams } from "expo-router";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FormIzin } from "../../components/praktikan/FormIzin";
+import { AnalisisUlangIzin } from "../../components/praktikan/AnalisisUlangIzin";
+import { HasilAnalisisIzin } from "../../components/izin/HasilAnalisisIzin";
 import { Empty, ErrorBanner, Loading } from "../../components/shared/StatusLayar";
 import { useAuth } from "../../context/AuthContext";
 import { useDaftarIzinPraktikan } from "../../hooks/useIzinPraktikan";
@@ -39,6 +41,7 @@ export default function IzinPraktikanScreen() {
             <Text style={styles.subtitle}>Pilih sesi untuk mengirim alasan ketidakhadiran dan pantau statusnya.</Text>
             {izin.dariCache ? <Text style={styles.notice}>Menampilkan data tersimpan di perangkat.</Text> : null}
             {izin.error ? <ErrorBanner message={izin.error} /> : null}
+            {jadwal.error ? <ErrorBanner message={jadwal.error} /> : null}
             {targetId && !jadwal.loading && !sesiTarget ? <ErrorBanner message="Sesi tidak ditemukan atau bukan bagian dari kelasmu." /> : null}
             {sesiTarget && targetId && !sudahMengajukan ? (
               <FormIzin uid={user.uid} sessionId={targetId} onSelesai={() => {}} />
@@ -57,9 +60,8 @@ export default function IzinPraktikanScreen() {
                 <>
                   <Text style={[styles.status, styles[itemIzin.status]]}>{LABEL_STATUS_IZIN[itemIzin.status]}</Text>
                   <Text style={styles.reason} numberOfLines={3}>{itemIzin.alasan}</Text>
-                  <Text style={styles.ai}>
-                    Kategori AI: {itemIzin.kategoriAI ?? (itemIzin.statusAI === "failed" ? "Tidak tersedia" : "Memproses...")}
-                  </Text>
+                  <HasilAnalisisIzin pengajuan={itemIzin} />
+                  <AnalisisUlangIzin key={`${user.uid}:${itemIzin.id}`} uid={user.uid!} pengajuan={itemIzin} dariCache={izin.dariCache} />
                 </>
               ) : (
                 <Link href={{ pathname: "/praktikan/izin", params: { sesiId: item.id ?? "" } }} asChild>
@@ -69,7 +71,11 @@ export default function IzinPraktikanScreen() {
             </View>
           );
         }}
-        ListEmptyComponent={jadwal.loading || izin.loading ? <Loading label="Memuat sesi dan pengajuan..." /> : <Empty title="Belum ada sesi" description="Pengajuan izin hanya tersedia untuk sesi dari kelas yang kamu ikuti." />}
+        ListEmptyComponent={jadwal.error || izin.error ? (
+          <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => { jadwal.cobaLagi(); izin.cobaLagi(); }}>
+            <Text style={styles.actionText}>Coba lagi</Text>
+          </TouchableOpacity>
+        ) : jadwal.loading || izin.loading ? <Loading label="Memuat sesi dan pengajuan..." /> : <Empty title="Belum ada sesi" description="Pengajuan izin hanya tersedia untuk sesi dari kelas yang kamu ikuti." />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
     </SafeAreaView>
@@ -89,7 +95,6 @@ const styles = StyleSheet.create({
   card: { padding: 18, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", gap: 8 },
   session: { color: "#0F172A", fontSize: 17, fontWeight: "700" },
   reason: { color: "#475569", lineHeight: 21 },
-  ai: { color: "#64748B", lineHeight: 20, fontSize: 13 },
   status: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, fontWeight: "700" },
   pending: { backgroundColor: "#FEF3C7", color: "#92400E" },
   approved: { backgroundColor: "#DCFCE7", color: "#166534" },

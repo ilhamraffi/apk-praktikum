@@ -77,15 +77,25 @@ eas build --profile development --platform android
 
 ### Konfigurasi klasifikasi AI
 
-Pengajuan izin selalu disimpan terlebih dahulu sebagai `pending`. Jika endpoint
-AI tersedia, aplikasi mengirim `POST` dengan body `{ "alasan": "..." }` ke URL
-yang diatur melalui `EXPO_PUBLIC_AI_API_URL`. Respons dapat mengembalikan
-`kategori`, `category`, atau `label`. Timeout AI adalah 10 detik; kegagalan AI
-tidak membatalkan pengajuan dan keputusan tetap dilakukan oleh Asisten.
+Pengajuan izin disimpan terlebih dahulu sebagai `pending`, kemudian teks alasan
+dianalisis menggunakan paket **EDOM lokal dari materi pengajar**. Hasilnya adalah
+sentimen `positif`, `netral`, atau `negatif`, disimpan pada `kategoriAI` dengan
+`statusAI: "success"`. Teks yang tidak dikenali disimpan tanpa kategori dengan
+`statusAI: "unknown_vocabulary"`; kegagalan model memakai `statusAI: "failed"`.
+Keputusan izin tetap dilakukan secara manual oleh asisten.
 
-```env
-EXPO_PUBLIC_AI_API_URL=https://contoh-endpoint-pengajar.example/classify
-```
+Mode EDOM ini tidak memerlukan `EXPO_PUBLIC_AI_API_URL`, panggilan HTTP, paket
+Python, atau modul native tambahan. Firestore tetap memerlukan koneksi untuk
+menyimpan pengajuan dan hasilnya. Tombol **Analisis ulang dengan EDOM** tersedia
+pada pengajuan milik sendiri yang masih menunggu, termasuk pengajuan lama yang
+sebelumnya tidak memiliki kategori. Analisis ulang hanya mengubah dua field AI.
+
+EDOM berasal dari komentar evaluasi perkuliahan dan membaca sentimen, bukan
+kategori medis/jenis izin atau kebenaran alasan. Rincian implementasi, sumber,
+dan uji perangkat ada di [Integrasi EDOM](docs/INTEGRASI_EDOM.md).
+Ketentuan tugas di atas menyebut API; mode lokal ini mengikuti paket EDOM yang
+dikonfirmasi sebagai materi tugas. Integrasi endpoint API terpisah tidak
+diklaim selesai oleh mode lokal ini.
 
 ## 6. Struktur & kepemilikan (usulan, dibekukan PM di Fase 0)
 Satu folder/file = satu pemilik. Perubahan di area orang lain lewat PM atau issue.

@@ -2,6 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useReferensiIzinAsisten } from "../../../hooks/useReferensiIzinAsisten";
 import type { PengajuanIzin, StatusIzin } from "../../../types";
 import { LABEL_STATUS_IZIN, teksIzin } from "../../../utils/izinAsisten";
+import { HasilAnalisisIzin } from "../../izin/HasilAnalisisIzin";
 
 export function StatusPengajuanIzin({ status }: { status: StatusIzin }) {
   return <View style={[styles.badge, styles[status]]}><Text style={styles.badgeText}>{LABEL_STATUS_IZIN[status]}</Text></View>;
@@ -36,11 +37,7 @@ export function AlasanPengajuanIzin({ pengajuan, ringkas = false }: { pengajuan:
     <View style={styles.section}>
       <Text style={styles.heading}>Alasan ketidakhadiran</Text>
       <Text selectable={!ringkas} numberOfLines={ringkas ? 3 : undefined} style={styles.reason}>{pengajuan.alasan}</Text>
-      <View style={styles.ai}>
-        <Text style={styles.heading}>Kategori AI</Text>
-        <Text style={styles.reason}>{teksIzin(pengajuan.kategoriAI, "Kategori belum tersedia. Pengajuan tetap dapat diperiksa.")}</Text>
-        <Text style={styles.muted}>Klasifikasi hanya informasi pendukung. Keputusan tetap ditentukan asisten.</Text>
-      </View>
+      <HasilAnalisisIzin pengajuan={pengajuan} />
     </View>
   );
 }
@@ -51,7 +48,6 @@ const styles = StyleSheet.create({
   heading: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "700" },
   reason: { color: "#334155", fontSize: 15, lineHeight: 25 },
   muted: { color: "#64748B", fontSize: 13, lineHeight: 21 },
-  ai: { gap: 6, padding: 14, borderRadius: 12, backgroundColor: "#F1F5F9" },
   badge: { alignSelf: "flex-start", paddingVertical: 5, paddingHorizontal: 12, borderRadius: 12 },
   badgeText: { color: "#0F172A", fontSize: 13, lineHeight: 20, fontWeight: "600" },
   pending: { backgroundColor: "#FEF3C7" },
