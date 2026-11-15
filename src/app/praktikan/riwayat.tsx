@@ -51,7 +51,7 @@ export default function RiwayatPraktikanScreen() {
             <Text accessibilityRole="header" style={styles.title}>Riwayat kehadiran</Text>
             <Text style={styles.subtitle}>Kehadiranmu pada sesi kelas yang saat ini kamu ikuti.</Text>
             {(jadwal.dariCache || hasil.dariCache) && !error ? (
-              <Text accessibilityRole="status" style={styles.cacheNotice}>Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.</Text>
+              <Text style={styles.cacheNotice}>Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.</Text>
             ) : null}
           </View>
         }

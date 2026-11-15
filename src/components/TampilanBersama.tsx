@@ -1,16 +1,18 @@
 // src/components/TampilanBersama.tsx
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 
 export function ActiveUserBar() {
   const { user, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
 
   if (!user) return null;
 
   return (
     <>
       {/* Bar Identitas di Atas */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.roleTag}>
           PERAN AKTIF:{" "}
           {user.role === "ASISTEN" ? " ASISTEN" : " PRAKTIKAN"}
@@ -21,7 +23,10 @@ export function ActiveUserBar() {
       </View>
 
       {/* Tombol Keluar Melayang di Tengah Bawah */}
-      <View style={styles.bottomNavContainer}>
+            <View
+        pointerEvents="box-none"
+        style={[styles.bottomNavContainer, { bottom: insets.bottom + 20 }]}
+      >
         <TouchableOpacity style={styles.homeBtn} onPress={signOut}>
           <Text style={styles.homeText}>Keluar</Text>
         </TouchableOpacity>
@@ -34,7 +39,7 @@ const styles = StyleSheet.create({
   topBar: {
     backgroundColor: "#1E1B4B",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     alignItems: "center",
   },
   roleTag: {
@@ -49,12 +54,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 2,
   },
-  bottomNavContainer: {
+   bottomNavContainer: {
     position: "absolute",
-    bottom: 30,
     left: 0,
     right: 0,
     alignItems: "center",
+    zIndex: 100,
+    elevation: 100,
   },
   homeBtn: {
     backgroundColor: "#1E1B4B",
