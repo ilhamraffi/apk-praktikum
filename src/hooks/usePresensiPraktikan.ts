@@ -59,6 +59,7 @@ export async function catatPresensiPraktikan(input: InputPresensi): Promise<void
     }
     cekAkun();
     transaksi.set(presensiRef, {
+      uid,
       nama: profil.nama.trim(),
       nim: profil.nim.trim(),
       statusKehadiran: "Hadir",

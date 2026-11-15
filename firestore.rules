@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAsisten() {
+      return signedIn() && profile().role == 'ASISTEN';
+    }
+
+    function isPraktikan() {
+      return signedIn() && profile().role == 'PRAKTIKAN';
+    }
+
+    match /users/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'PRAKTIKAN';
+      allow read: if signedIn() && (request.auth.uid == uid || isAsisten());
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
+        && request.resource.data.uid == uid
+        && resource.data.uid == uid
+        && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    match /classes/{classId} {
+      allow read: if isAsisten()
+        || (isPraktikan() && request.auth.uid in resource.data.pesertaUids);
+      allow write: if isAsisten();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAsisten()
+        || (isPraktikan()
+          && request.auth.uid in get(/databases/$(database)/documents/classes/$(resource.data.classId)).data.pesertaUids);
+      allow write: if isAsisten();
+
+      match /attendance/{uid} {
+        allow read: if isAsisten() || (isPraktikan() && request.auth.uid == uid);
+        allow create: if isPraktikan() && request.auth.uid == uid
+          && get(/databases/$(database)/documents/sessions/$(sessionId)).data.status == 'DIBUKA'
+          && request.auth.uid in get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/sessions/$(sessionId)).data.classId)).data.pesertaUids
+          && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'statusKehadiran', 'catatan', 'waktu'])
+          && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /permissions/{permissionId} {
+      allow read: if isAsisten() || (isPraktikan() && resource.data.uid == request.auth.uid);
+      allow create: if isPraktikan() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'uid', 'sessionId', 'alasan', 'kategoriAI', 'statusAI', 'status',
+          'diputuskanOleh', 'dibuatPada', 'diputuskanPada'
+        ])
+        && request.resource.data.sessionId is string
+        && request.resource.data.alasan is string
+        && request.resource.data.alasan.size() > 0
+        && request.auth.uid in get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.classId)).data.pesertaUids;
+      allow update: if (
+          isPraktikan()
+          && resource.data.uid == request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.sessionId == resource.data.sessionId
+          && request.resource.data.alasan == resource.data.alasan
+          && request.resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kategoriAI', 'statusAI'])
+        ) || (
+          isAsisten()
+          && resource.data.status == 'pending'
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.sessionId == resource.data.sessionId
+          && request.resource.data.alasan == resource.data.alasan
+          && request.resource.data.status in ['approved', 'rejected']
+          && request.resource.data.diputuskanOleh == request.auth.uid
+          && request.resource.data.diputuskanPada == request.time
+        );
+      allow delete: if false;
+    }
+  }
+}

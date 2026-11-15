@@ -75,6 +75,18 @@ Perubahan **JavaScript/TypeScript** langsung terbaca tanpa build ulang. **Build 
 eas build --profile development --platform android
 ```
 
+### Konfigurasi klasifikasi AI
+
+Pengajuan izin selalu disimpan terlebih dahulu sebagai `pending`. Jika endpoint
+AI tersedia, aplikasi mengirim `POST` dengan body `{ "alasan": "..." }` ke URL
+yang diatur melalui `EXPO_PUBLIC_AI_API_URL`. Respons dapat mengembalikan
+`kategori`, `category`, atau `label`. Timeout AI adalah 10 detik; kegagalan AI
+tidak membatalkan pengajuan dan keputusan tetap dilakukan oleh Asisten.
+
+```env
+EXPO_PUBLIC_AI_API_URL=https://contoh-endpoint-pengajar.example/classify
+```
+
 ## 6. Struktur & kepemilikan (usulan, dibekukan PM di Fase 0)
 Satu folder/file = satu pemilik. Perubahan di area orang lain lewat PM atau issue.
 
