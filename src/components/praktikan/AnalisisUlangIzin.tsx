@@ -35,7 +35,7 @@ export function AnalisisUlangIzin({ uid, pengajuan, dariCache }: { uid: string; 
     <View style={styles.section}>
       <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !boleh || memproses, busy: memproses }} disabled={!boleh || memproses} onPress={analisis} style={[styles.button, (!boleh || memproses) && styles.disabled]}>
         {memproses ? <ActivityIndicator color="#4338CA" /> : null}
-        <Text style={styles.buttonText}>{memproses ? "Menganalisis..." : "Analisis ulang dengan EDOM"}</Text>
+        <Text style={styles.buttonText}>{memproses ? "Menganalisis..." : "Analisis ulang alasan"}</Text>
       </TouchableOpacity>
       {dariCache ? <Text style={styles.description}>Hubungkan ke server untuk menyimpan hasil analisis.</Text> : null}
       {pesan ? <Text accessibilityLiveRegion="polite" style={styles.description}>{pesan}</Text> : null}

@@ -1,4 +1,8 @@
-# Model EDOM dari materi pengajar
+# Model EDOM dari materi pengajar (arsip)
+
+> Sejak integrasi model kategori, berkas di folder ini tidak lagi menjadi
+> keluaran utama `kategoriAI`. Paket dipertahankan tanpa perubahan sebagai arsip
+> sumber; lihat `../kategori/README.md` dan `docs/INTEGRASI_KATEGORI.md`.
 
 `model-edom.json` dan `sentiment.js` disalin tanpa perubahan dari paket
 `model-edom` yang diberikan pengguna pada 15 November 2026.

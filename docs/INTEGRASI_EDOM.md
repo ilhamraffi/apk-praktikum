@@ -1,4 +1,9 @@
-# Integrasi EDOM pada pengajuan izin
+# Integrasi EDOM pada pengajuan izin (arsip)
+
+> **Status: arsip.** Keluaran utama `kategoriAI` sekarang memakai model kategori
+> `sakit`/`keluarga`/`keperluan`. Lihat
+> [INTEGRASI_KATEGORI.md](INTEGRASI_KATEGORI.md). Paket EDOM tetap disimpan di
+> `src/ai/edom/` dan label sentimen lama tetap ditampilkan pada dokumen izin lama.
 
 Branch `feat/praktikan-presensi` diperbarui dengan fast-forward dari `main`
 `e2ca59e` (termasuk Auth/izin Rajib dan perbaikan PM) sebelum implementasi ini.

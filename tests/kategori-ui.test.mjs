@@ -43,19 +43,20 @@ function retryHarness(save = async () => {}) {
   return { ...hooks, calls, render: (changes = {}) => { props = { ...props, ...changes }; return hooks.render(() => AnalisisUlangIzin(props)); } };
 }
 
-test("hasil AI menampilkan sentimen asli, ketidakpastian, dan keputusan manusia", () => {
+test("hasil AI menampilkan kategori, ketidakpastian, dan keputusan manusia", () => {
   const { HasilAnalisisIzin } = loadSource("src/components/izin/HasilAnalisisIzin.tsx", {
     "react/jsx-runtime": runtime, "react-native": native, "../../utils/hasilAI": utils,
   });
-  for (const label of ["positif", "netral", "negatif"]) {
+  for (const [label, tampilan] of [["sakit", "Sakit"], ["keluarga", "Keluarga"], ["keperluan", "Keperluan"]]) {
     const rendered = text(HasilAnalisisIzin({ pengajuan: { ...pengajuan, kategoriAI: label, statusAI: "success" } }));
-    assert.match(rendered, /Sentimen AI \(EDOM\)/);
+    assert.match(rendered, /Kategori AI/);
+    assert.match(rendered, new RegExp(tampilan));
     assert.match(rendered, /tidak memverifikasi kebenaran alasan/);
     assert.match(rendered, /Keputusan tetap ditentukan asisten/);
   }
   const unknown = text(HasilAnalisisIzin({ pengajuan: { ...pengajuan, statusAI: "unknown_vocabulary" } }));
   assert.match(unknown, /belum dapat dianalisis/);
-  assert.doesNotMatch(unknown, /Netral/);
+  assert.doesNotMatch(unknown, /Sakit/);
 });
 
 test("analisis ulang hanya dimulai saat diketuk, ketukan ganda ditolak dan hasil menunggu commit", async () => {
