@@ -1,4 +1,4 @@
-// Integrasi model asli + batas Firestore tiruan, tanpa akses proyek Firebase tim.
+// Integrasi model kategori + batas Firestore tiruan, tanpa akses proyek Firebase tim.
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
@@ -6,8 +6,8 @@ import { loadSource } from "./helpers/load-source.mjs";
 
 const require = createRequire(import.meta.url);
 const ai = loadSource("src/lib/ai.ts", {
-  "../ai/edom/model-edom.json": require("../src/ai/edom/model-edom.json"),
-  "../ai/edom/sentiment": require("../src/ai/edom/sentiment.js"),
+  "../ai/kategori/model-kategori.json": require("../src/ai/kategori/model-kategori.json"),
+  "../ai/kategori/classifier": require("../src/ai/kategori/classifier.js"),
 });
 const utils = loadSource("src/utils/izinAsisten.ts");
 const errors = loadSource("src/lib/errors.ts");
@@ -60,20 +60,20 @@ function harness(customAI = ai) {
   return { ...source, docs, auth, writes, updates, controls, serverTime };
 }
 
-test("pengajuan tersimpan dahulu, sentimen model asli disimpan tanpa mengubah status pending", async () => {
+test("pengajuan tersimpan dahulu, kategori model asli disimpan tanpa mengubah status pending", async () => {
   const h = harness();
   await h.ajukanIzinPraktikan(request);
   assert.equal(h.writes[0].value.status, "pending");
   assert.equal(h.writes[0].value.kategoriAI, null);
   assert.equal(h.writes[0].value.dibuatPada, h.serverTime);
-  assert.deepEqual(h.updates, [{ path, patch: { kategoriAI: "netral", statusAI: "success" } }]);
+  assert.deepEqual(h.updates, [{ path, patch: { kategoriAI: "sakit", statusAI: "success" } }]);
   assert.equal(h.docs.get(path).status, "pending");
   assert.equal(h.docs.get(path).diputuskanOleh, null);
   assert.equal(h.docs.get(path).diputuskanPada, null);
 });
 
-test("pengajuan positif/negatif tetap menunggu keputusan asisten", async () => {
-  for (const label of ["positif", "negatif"]) {
+test("pengajuan sakit/keluarga/keperluan tetap menunggu keputusan asisten", async () => {
+  for (const label of ["sakit", "keluarga", "keperluan"]) {
     const h = harness({ ...ai, klasifikasikanAlasan: async () => label });
     await h.ajukanIzinPraktikan(request);
     assert.equal(h.docs.get(path).kategoriAI, label);
@@ -99,7 +99,7 @@ test("izin lama gagal dianalisis dapat dianalisis ulang tanpa membuat ulang peng
   assert.equal(h.writes.length, 0);
   assert.equal(h.docs.get(path).dibuatPada, permission.dibuatPada);
   assert.equal(h.docs.get(path).alasan, alasan);
-  assert.deepEqual(h.updates[0].patch, { kategoriAI: "netral", statusAI: "success" });
+  assert.deepEqual(h.updates[0].patch, { kategoriAI: "sakit", statusAI: "success" });
 });
 
 test("analisis ulang menolak akun/role salah, izin milik orang lain, dokumen hilang dan keputusan final", async () => {
@@ -121,9 +121,9 @@ test("analisis ulang menolak akun/role salah, izin milik orang lain, dokumen hil
 
 test("retry memeriksa ulang alasan terbaru atau berhenti saat asisten lebih dulu memutuskan", async () => {
   const changed = harness(); changed.docs.set(path, { ...permission });
-  changed.controls.retry = () => changed.docs.set(path, { ...permission, alasan: "Asisten menjelaskan langkah praktikum dengan jelas." });
+  changed.controls.retry = () => changed.docs.set(path, { ...permission, alasan: "Saya harus mengantar ibu ke rumah sakit." });
   await changed.analisisUlangIzinPraktikan({ uid, izinId });
-  assert.equal(changed.docs.get(path).kategoriAI, "positif");
+  assert.equal(changed.docs.get(path).kategoriAI, "keluarga");
   for (const status of ["approved", "rejected"]) {
     const h = harness(); h.docs.set(path, { ...permission });
     h.controls.retry = () => h.docs.set(path, { ...permission, status, diputuskanOleh: "asisten-a" });
@@ -135,7 +135,7 @@ test("retry memeriksa ulang alasan terbaru atau berhenti saat asisten lebih dulu
 
 test("gagal menyimpan izin tidak memanggil AI; gagal sinkronisasi AI tidak menggagalkan izin yang tersimpan", async () => {
   let calls = 0;
-  const h = harness({ ...ai, klasifikasikanAlasan: async () => { calls += 1; return "positif"; } });
+  const h = harness({ ...ai, klasifikasikanAlasan: async () => { calls += 1; return "sakit"; } });
   h.controls.setError = { code: "firestore/permission-denied" };
   await assert.rejects(h.ajukanIzinPraktikan(request));
   assert.equal(calls, 0);

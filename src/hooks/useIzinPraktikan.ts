@@ -11,7 +11,7 @@ import {
 } from "@react-native-firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
-import { klasifikasikanAlasan, TeksTidakDikenaliEDOM } from "../lib/ai";
+import { klasifikasikanAlasan, TeksTidakDikenaliKategori } from "../lib/ai";
 import type { PengajuanIzin } from "../types";
 import { bacaPengajuanIzin, urutkanIzin } from "../utils/izinAsisten";
 
@@ -47,7 +47,7 @@ export async function analisisUlangIzinPraktikan(input: { uid: string; izinId: s
     try {
       kategoriAI = await klasifikasikanAlasan(pengajuan.alasan);
     } catch (error) {
-      statusAI = error instanceof TeksTidakDikenaliEDOM ? "unknown_vocabulary" : "failed";
+      statusAI = error instanceof TeksTidakDikenaliKategori ? "unknown_vocabulary" : "failed";
     }
     cekAkun();
     transaksi.update(izinRef, { kategoriAI, statusAI });

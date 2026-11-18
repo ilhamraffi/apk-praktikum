@@ -1,26 +1,31 @@
-// EDOM dari materi pengajar: inferensi sentimen lokal, tanpa HTTP/paket native.
+// Model kategori alasan lokal (sakit/keluarga/keperluan), tanpa HTTP/paket native.
 // Kontrak Promise<string> dipertahankan untuk pemanggil pengajuan izin.
-import model from "../ai/edom/model-edom.json";
-import { createSentimentClassifier } from "../ai/edom/sentiment";
+import model from "../ai/kategori/model-kategori.json";
+import { createKategoriClassifier } from "../ai/kategori/classifier";
 
-export class TeksTidakDikenaliEDOM extends Error {
+export class TeksTidakDikenaliKategori extends Error {
   constructor() {
-    super("Teks belum dapat dianalisis oleh model EDOM. Pengajuan tetap dapat diperiksa asisten.");
-    this.name = "TeksTidakDikenaliEDOM";
+    super("Teks belum dapat dikategorikan oleh model lokal. Pengajuan tetap dapat diperiksa asisten.");
+    this.name = "TeksTidakDikenaliKategori";
   }
 }
 
-let classify: ReturnType<typeof createSentimentClassifier> | undefined;
+const LABEL_KATEGORI = new Set(["sakit", "keluarga", "keperluan"]);
+
+let classify: ReturnType<typeof createKategoriClassifier> | undefined;
 
 export async function klasifikasikanAlasan(alasan: string): Promise<string> {
   // Lazy singleton: model disiapkan sekali, tidak pada setiap render/pengajuan.
-  classify ??= createSentimentClassifier(model);
+  classify ??= createKategoriClassifier(model);
   const prediction = classify(alasan);
   if (prediction.label === null || prediction.status !== "predicted") {
-    throw new TeksTidakDikenaliEDOM();
+    throw new TeksTidakDikenaliKategori();
   }
-  if (!["positif", "netral", "negatif"].includes(prediction.label)) {
-    throw new Error("Label model EDOM tidak valid.");
+  if (!LABEL_KATEGORI.has(prediction.label)) {
+    throw new Error("Label model kategori tidak valid.");
   }
   return prediction.label;
 }
+
+/** @deprecated Nama lama sebelum model kategori; dipertahankan agar import lama tetap jalan. */
+export const TeksTidakDikenaliEDOM = TeksTidakDikenaliKategori;

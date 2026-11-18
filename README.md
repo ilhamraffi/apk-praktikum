@@ -78,24 +78,25 @@ eas build --profile development --platform android
 ### Konfigurasi klasifikasi AI
 
 Pengajuan izin disimpan terlebih dahulu sebagai `pending`, kemudian teks alasan
-dianalisis menggunakan paket **EDOM lokal dari materi pengajar**. Hasilnya adalah
-sentimen `positif`, `netral`, atau `negatif`, disimpan pada `kategoriAI` dengan
-`statusAI: "success"`. Teks yang tidak dikenali disimpan tanpa kategori dengan
-`statusAI: "unknown_vocabulary"`; kegagalan model memakai `statusAI: "failed"`.
-Keputusan izin tetap dilakukan secara manual oleh asisten.
+dikategorikan oleh **model lokal** menjadi `sakit`, `keluarga`, atau `keperluan`.
+Hasilnya disimpan pada `kategoriAI` dengan `statusAI: "success"`. Teks yang tidak
+dikenali disimpan tanpa kategori dengan `statusAI: "unknown_vocabulary"`;
+kegagalan model memakai `statusAI: "failed"`. Keputusan izin tetap dilakukan
+secara manual oleh asisten.
 
-Mode EDOM ini tidak memerlukan `EXPO_PUBLIC_AI_API_URL`, panggilan HTTP, paket
-Python, atau modul native tambahan. Firestore tetap memerlukan koneksi untuk
-menyimpan pengajuan dan hasilnya. Tombol **Analisis ulang dengan EDOM** tersedia
-pada pengajuan milik sendiri yang masih menunggu, termasuk pengajuan lama yang
-sebelumnya tidak memiliki kategori. Analisis ulang hanya mengubah dua field AI.
+Model kategori dilatih dari `ml/data/alasan_izin.csv` memakai TF-IDF + LinearSVC,
+lalu diekspor ke `src/ai/kategori/model-kategori.json`. Inferensi berjalan di
+perangkat tanpa `EXPO_PUBLIC_AI_API_URL`, panggilan HTTP, atau modul native
+tambahan. Firestore tetap memerlukan koneksi untuk menyimpan pengajuan dan
+hasilnya. Tombol **Analisis ulang alasan** tersedia pada pengajuan milik sendiri
+yang masih menunggu, termasuk pengajuan lama yang sebelumnya tidak memiliki
+kategori. Analisis ulang hanya mengubah dua field AI.
 
-EDOM berasal dari komentar evaluasi perkuliahan dan membaca sentimen, bukan
-kategori medis/jenis izin atau kebenaran alasan. Rincian implementasi, sumber,
-dan uji perangkat ada di [Integrasi EDOM](docs/INTEGRASI_EDOM.md).
-Ketentuan tugas di atas menyebut API; mode lokal ini mengikuti paket EDOM yang
-dikonfirmasi sebagai materi tugas. Integrasi endpoint API terpisah tidak
-diklaim selesai oleh mode lokal ini.
+Dataset bawaan masih berupa **contoh sintetis**; angka evaluasinya bukan klaim
+akurasi aplikasi. Ganti dengan alasan nyata yang dianonimkan lalu latih ulang
+sesuai [panduan pelatihan](ml/README.md). Model lama EDOM disimpan sebagai arsip
+dan label sentimen lama tetap tampil pada dokumen izin lama. Rincian implementasi
+ada di [Integrasi kategori](docs/INTEGRASI_KATEGORI.md).
 
 ## 6. Struktur & kepemilikan (usulan, dibekukan PM di Fase 0)
 Satu folder/file = satu pemilik. Perubahan di area orang lain lewat PM atau issue.
