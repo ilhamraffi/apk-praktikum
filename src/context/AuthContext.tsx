@@ -93,7 +93,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfil(profilBaru);
       },
       signIn: async (email, password) => {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+        const credential = await signInWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password,
+        );
+        const snap = await getDoc(doc(db, "users", credential.user.uid));
+        if (!snap.exists()) {
+          throw new Error("Profil pengguna belum ditemukan.");
+        }
+        setProfil({ uid: credential.user.uid, ...snap.data() } as ProfilUser);
       },
       signOut: async () => {
         await firebaseSignOut(auth);
