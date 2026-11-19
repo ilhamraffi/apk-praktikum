@@ -76,11 +76,6 @@ export default function JadwalAsistenScreen() {
                 <Text style={styles.brandName}>HadirLab</Text>
                 <Text style={styles.brandCaption}>Ruang asisten</Text>
               </View>
-              <Link href="/" dismissTo asChild>
-                <TouchableOpacity accessibilityRole="link" style={styles.dashboardButton}>
-                  <Text style={styles.dashboardText}>Dashboard</Text>
-                </TouchableOpacity>
-              </Link>
             </View>
 
             <View style={styles.headingRow}>

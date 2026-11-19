@@ -16,7 +16,7 @@ export function IdentitasPengajuanIzin({ asistenUid, pengajuan }: { asistenUid: 
       <Text style={styles.title}>{teksIzin(profil.data?.nama, profil.loading ? "Memuat praktikan..." : "Profil tidak tersedia")}</Text>
       <Text selectable style={styles.muted}>NIM: {teksIzin(profil.data?.nim, "Belum tersedia")} · UID: {pengajuan.uid}</Text>
       <Text style={styles.heading}>{teksIzin(sesi.data?.namaPraktikum, sesi.loading ? "Memuat sesi..." : "Sesi tidak tersedia")}</Text>
-      {sesi.data ? <Text style={styles.muted}>{teksIzin(sesi.data.modul, "Modul belum tersedia")} · {teksIzin(sesi.data.waktu, "Jadwal belum tersedia")}</Text> : null}
+      {sesi.data ? <Text style={styles.muted}>teksWaktuSesi(sesi.data) · {teksIzin(sesi.data.waktu, "Jadwal belum tersedia")}</Text> : null}
       <Text selectable style={styles.muted}>ID sesi: {pengajuan.sessionId}</Text>
       {profil.error || sesi.error ? (
         <View>

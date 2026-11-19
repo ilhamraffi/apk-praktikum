@@ -9,6 +9,7 @@ import {
 import { pesanError } from "../lib/errors";
 import { db } from "../lib/firebase";
 import type { Kelas, Sesi } from "../types";
+import { urutkanSesi } from "../utils/waktuSesi";
 
 interface JadwalPraktikan {
   kelas: Kelas[];
@@ -57,10 +58,8 @@ export function langgananJadwalPraktikan(
     terima({
       kelas,
       sesi: daftar.flatMap((item) => item.sesi).sort((a, b) =>
-        a.namaPraktikum.localeCompare(b.namaPraktikum) ||
-        a.modul.localeCompare(b.modul) ||
-        (a.id ?? "").localeCompare(b.id ?? ""),
-      ),
+  urutkanSesi(a, b) || (a.id ?? "").localeCompare(b.id ?? ""),
+),
       loading: daftar.some((item) => item.loading),
       error: null,
       dariCache: kelasDariCache || daftar.some((item) => item.dariCache),

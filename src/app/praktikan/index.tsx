@@ -66,11 +66,7 @@ export default function JadwalPraktikanScreen() {
                 <Text style={styles.brandName}>HadirLab</Text>
                 <Text style={styles.brandCaption}>Ruang praktikan</Text>
               </View>
-              <Link href="/" dismissTo asChild>
-                <TouchableOpacity style={styles.dashboardButton} accessibilityRole="link">
-                  <Text style={styles.dashboardText}>Dashboard</Text>
-                </TouchableOpacity>
-              </Link>
+              
             </View>
             <View style={styles.headingRow}>
               <Text accessibilityRole="header" style={styles.title}>Jadwal saya</Text>
