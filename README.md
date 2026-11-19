@@ -26,7 +26,7 @@ npm install
 3. Buka aplikasi **my-app** di HP, scan QR dari terminal, atau ketik `http://<IP-laptop>:8081`.
 4. Jika HP tidak bisa menjangkau laptop (Wi-Fi kampus sering memblokir antar perangkat): pakai `npx expo start --dev-client --tunnel`, atau kabel USB dengan `adb reverse tcp:8081 tcp:8081` lalu isi `http://localhost:8081`.
 
-Project Manager : Rebuild Dev (Jika ada paket native baru atau perubahan `app.json`
+Project Manager (Rebuild Dev (Jika ada paket native baru atau perubahan `app.json`) :
 ```bash
 # Build development (hanya PM / anggota yang diberi akses team Expo)
 eas build --profile development --platform android
