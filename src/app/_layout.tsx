@@ -13,7 +13,7 @@ function RouteGuard() {
   useEffect(() => {
     if (loading) return;
     if (!user && !isAuthRoute) {
-      router.replace("./login");
+      router.replace("/login");
       return;
     }
     if (user && role && isAuthRoute) {
