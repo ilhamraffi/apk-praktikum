@@ -1,6 +1,8 @@
 // src/components/asisten/FormSesi.tsx
-// Form tambah/ubah sesi. Dipasang secara kondisional oleh layar induk sehingga
-// state terinisialisasi dari `awal`.
+// Form tambah/ubah sesi. Nama praktikum diambil dari kelas yang dipilih,
+// waktu berupa tanggal + jam (bukan teks bebas), dan sesi baru bisa diulang
+// tiap minggu. Dipasang secara kondisional oleh layar induk sehingga state
+// terinisialisasi dari `awal`.
 import { useState } from "react";
 import {
   Modal,
@@ -13,45 +15,123 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MAKS_PERTEMUAN, type InputSesi } from "../../hooks/useSesi";
 import { pesanError } from "../../lib/errors";
 import type { Kelas, Sesi } from "../../types";
-import type { InputSesi } from "../../hooks/useSesi";
+import {
+  formatJamInput,
+  formatTanggalInput,
+  formatTanggalPanjang,
+  gabungWaktu,
+  keDate,
+  maskJam,
+  maskTanggal,
+  tambahMinggu,
+} from "../../utils/waktuSesi";
 
 type FormSesiProps = {
   awal?: Sesi | null;
   daftarKelas: Kelas[];
   onBatal: () => void;
-  onSimpan: (input: InputSesi) => Promise<unknown>;
+  onSimpan: (input: InputSesi, jumlahPertemuan: number) => Promise<unknown>;
 };
 
-export function FormSesi({ awal, daftarKelas, onBatal, onSimpan }: FormSesiProps) {
-  const [namaPraktikum, setNamaPraktikum] = useState(awal?.namaPraktikum ?? "");
+const JUMLAH_SEMESTER = 14; // perkiraan jumlah pertemuan dalam satu semester
+
+export function FormSesi({
+  awal,
+  daftarKelas,
+  onBatal,
+  onSimpan,
+}: FormSesiProps) {
+  const mulaiAwal = keDate(awal?.mulai);
+  const selesaiAwal = keDate(awal?.selesai);
+
+  const [classId, setClassId] = useState(
+    awal?.classId ?? daftarKelas[0]?.id ?? "",
+  );
   const [modul, setModul] = useState(awal?.modul ?? "");
-  const [waktu, setWaktu] = useState(awal?.waktu ?? "");
+  const [tanggal, setTanggal] = useState(
+    mulaiAwal ? formatTanggalInput(mulaiAwal) : "",
+  );
+  const [jamMulai, setJamMulai] = useState(
+    mulaiAwal ? formatJamInput(mulaiAwal) : "",
+  );
+  const [jamSelesai, setJamSelesai] = useState(
+    selesaiAwal ? formatJamInput(selesaiAwal) : "",
+  );
   const [ruangan, setRuangan] = useState(awal?.ruangan ?? "");
-  const [classId, setClassId] = useState(awal?.classId ?? daftarKelas[0]?.id ?? "");
+  const [ulang, setUlang] = useState(false);
+  const [jumlah, setJumlah] = useState(String(JUMLAH_SEMESTER));
   const [memproses, setMemproses] = useState(false);
   const [error, setError] = useState("");
 
+  const kelasTerpilih = daftarKelas.find((k) => k.id === classId);
+  const namaPraktikum = kelasTerpilih?.nama ?? awal?.namaPraktikum ?? "";
+  const modeTambah = !awal;
+  const berulang = modeTambah && ulang;
+
+  const jumlahPertemuan = Number(jumlah);
+  const jumlahValid =
+    Number.isInteger(jumlahPertemuan) &&
+    jumlahPertemuan >= 2 &&
+    jumlahPertemuan <= MAKS_PERTEMUAN;
+  const mulaiPreview = gabungWaktu(tanggal, jamMulai);
+  const pertemuanTerakhir =
+    berulang && jumlahValid && mulaiPreview
+      ? tambahMinggu(mulaiPreview, jumlahPertemuan - 1)
+      : null;
+
   const submit = async () => {
     setError("");
-    if (!namaPraktikum.trim() || !modul.trim() || !waktu.trim() || !ruangan.trim()) {
-      setError("Semua kolom wajib diisi.");
-      return;
-    }
-    if (!classId) {
+    if (!classId || !kelasTerpilih) {
       setError("Pilih kelas terlebih dahulu. Jika belum ada, buat kelas dulu.");
       return;
     }
+    if (!berulang && !modul.trim()) {
+      setError("Modul wajib diisi.");
+      return;
+    }
+    if (!ruangan.trim()) {
+      setError("Ruangan wajib diisi.");
+      return;
+    }
+    const mulai = gabungWaktu(tanggal, jamMulai);
+    const selesai = gabungWaktu(tanggal, jamSelesai);
+    if (!mulai) {
+      setError(
+        "Tanggal harus berformat DD-MM-YYYY (contoh 20-11-2026) dan jam mulai HH:MM (contoh 08:00).",
+      );
+      return;
+    }
+    if (!selesai) {
+      setError("Jam selesai harus berformat HH:MM (contoh 10:30).");
+      return;
+    }
+    if (selesai.getTime() <= mulai.getTime()) {
+      setError("Jam selesai harus setelah jam mulai.");
+      return;
+    }
+    if (berulang && !jumlahValid) {
+      setError(
+        `Jumlah pertemuan harus bilangan bulat 2 sampai ${MAKS_PERTEMUAN}.`,
+      );
+      return;
+    }
+
     setMemproses(true);
     try {
-      await onSimpan({
-        classId,
-        namaPraktikum: namaPraktikum.trim(),
-        modul: modul.trim(),
-        waktu: waktu.trim(),
-        ruangan: ruangan.trim(),
-      });
+      await onSimpan(
+        {
+          classId,
+          namaPraktikum: kelasTerpilih.nama.trim(),
+          modul: modul.trim(),
+          mulai,
+          selesai,
+          ruangan: ruangan.trim(),
+        },
+        berulang ? jumlahPertemuan : 1,
+      );
       onBatal();
     } catch (e) {
       setError(pesanError(e));
@@ -63,45 +143,16 @@ export function FormSesi({ awal, daftarKelas, onBatal, onSimpan }: FormSesiProps
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onBatal}>
       <SafeAreaView style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
           <View accessibilityViewIsModal style={styles.sheet}>
             <Text accessibilityRole="header" style={styles.title}>
               {awal ? "Ubah sesi" : "Tambah sesi"}
             </Text>
 
-            <Text style={styles.label}>Nama praktikum</Text>
-            <TextInput
-              style={styles.input}
-              value={namaPraktikum}
-              onChangeText={setNamaPraktikum}
-              placeholder="Contoh: Pengembangan Platform Khusus"
-            />
-
-            <Text style={styles.label}>Modul</Text>
-            <TextInput
-              style={styles.input}
-              value={modul}
-              onChangeText={setModul}
-              placeholder="Contoh: Modul 1"
-            />
-
-            <Text style={styles.label}>Waktu</Text>
-            <TextInput
-              style={styles.input}
-              value={waktu}
-              onChangeText={setWaktu}
-              placeholder="Contoh: Kamis, 08:00 - 10:30 WIB"
-            />
-
-            <Text style={styles.label}>Ruangan</Text>
-            <TextInput
-              style={styles.input}
-              value={ruangan}
-              onChangeText={setRuangan}
-              placeholder="Contoh: Lab Komputasi Dasar E301"
-            />
-
-            <Text style={styles.label}>Kelas</Text>
+            <Text style={styles.label}>Kelas (praktikum)</Text>
             {daftarKelas.length === 0 ? (
               <Text style={styles.hint}>
                 Belum ada kelas. Buat kelas terlebih dahulu di halaman Kelas.
@@ -116,7 +167,12 @@ export function FormSesi({ awal, daftarKelas, onBatal, onSimpan }: FormSesiProps
                       onPress={() => setClassId(k.id ?? "")}
                       style={[styles.chip, aktif && styles.chipActive]}
                     >
-                      <Text style={[styles.chipText, aktif && styles.chipTextActive]}>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          aktif && styles.chipTextActive,
+                        ]}
+                      >
                         {k.nama} ({k.kode})
                       </Text>
                     </TouchableOpacity>
@@ -124,6 +180,139 @@ export function FormSesi({ awal, daftarKelas, onBatal, onSimpan }: FormSesiProps
                 })}
               </View>
             )}
+            {namaPraktikum ? (
+              <Text style={styles.hint}>Nama praktikum: {namaPraktikum}</Text>
+            ) : null}
+
+            {berulang ? (
+              <Text style={styles.hint}>
+                Modul diberi nomor otomatis (Pertemuan 1, 2, ...). Tiap
+                pertemuan bisa diubah satu per satu nanti.
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.label}>Modul</Text>
+                <TextInput
+                  style={styles.input}
+                  value={modul}
+                  onChangeText={setModul}
+                  placeholder="Contoh: Modul 1"
+                />
+              </>
+            )}
+
+            <Text style={styles.label}>Tanggal (DD-MM-YYYY)</Text>
+            <TextInput
+              style={styles.input}
+              value={tanggal}
+              onChangeText={(t) => setTanggal(maskTanggal(t))}
+              placeholder="Contoh: 20-11-2026"
+              keyboardType="number-pad"
+              maxLength={10}
+            />
+
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <Text style={styles.label}>Jam mulai</Text>
+                <TextInput
+                  style={styles.input}
+                  value={jamMulai}
+                  onChangeText={(t) => setJamMulai(maskJam(t))}
+                  placeholder="08:00"
+                  keyboardType="number-pad"
+                  maxLength={5}
+                />
+              </View>
+              <View style={styles.col}>
+                <Text style={styles.label}>Jam selesai</Text>
+                <TextInput
+                  style={styles.input}
+                  value={jamSelesai}
+                  onChangeText={(t) => setJamSelesai(maskJam(t))}
+                  placeholder="10:30"
+                  keyboardType="number-pad"
+                  maxLength={5}
+                />
+              </View>
+            </View>
+
+            <Text style={styles.label}>Ruangan</Text>
+            <TextInput
+              style={styles.input}
+              value={ruangan}
+              onChangeText={setRuangan}
+              placeholder="Contoh: Lab Komputasi Dasar E301"
+            />
+
+            {modeTambah ? (
+              <>
+                <Text style={styles.label}>Pengulangan</Text>
+                <View style={styles.chipRow}>
+                  <TouchableOpacity
+                    onPress={() => setUlang(false)}
+                    style={[styles.chip, !ulang && styles.chipActive]}
+                  >
+                    <Text
+                      style={[styles.chipText, !ulang && styles.chipTextActive]}
+                    >
+                      Sekali saja
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setUlang(true)}
+                    style={[styles.chip, ulang && styles.chipActive]}
+                  >
+                    <Text
+                      style={[styles.chipText, ulang && styles.chipTextActive]}
+                    >
+                      Tiap minggu
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {ulang ? (
+                  <>
+                    <Text style={styles.label}>Jumlah pertemuan</Text>
+                    <View style={styles.chipRow}>
+                      {[8, JUMLAH_SEMESTER, 16].map((n) => (
+                        <TouchableOpacity
+                          key={n}
+                          onPress={() => setJumlah(String(n))}
+                          style={[
+                            styles.chip,
+                            jumlah === String(n) && styles.chipActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              jumlah === String(n) && styles.chipTextActive,
+                            ]}
+                          >
+                            {n}
+                            {n === JUMLAH_SEMESTER ? " (1 semester)" : ""}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <TextInput
+                      style={styles.input}
+                      value={jumlah}
+                      onChangeText={setJumlah}
+                      placeholder={`2 - ${MAKS_PERTEMUAN}`}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                    {pertemuanTerakhir ? (
+                      <Text style={styles.hint}>
+                        Pertemuan terakhir:{" "}
+                        {formatTanggalPanjang(pertemuanTerakhir)}
+                      </Text>
+                    ) : null}
+                  </>
+                ) : null}
+              </>
+            ) : null}
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -131,17 +320,27 @@ export function FormSesi({ awal, daftarKelas, onBatal, onSimpan }: FormSesiProps
               accessibilityRole="button"
               onPress={submit}
               disabled={memproses}
-              style={({ pressed }) => [styles.submit, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.submit,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={styles.submitText}>
-                {memproses ? "Menyimpan..." : "Simpan"}
+                {memproses
+                  ? "Menyimpan..."
+                  : berulang && jumlahValid
+                    ? `Simpan ${jumlahPertemuan} pertemuan`
+                    : "Simpan"}
               </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={onBatal}
               disabled={memproses}
-              style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.cancel,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={styles.cancelText}>Batal</Text>
             </Pressable>
@@ -153,7 +352,11 @@ export function FormSesi({ awal, daftarKelas, onBatal, onSimpan }: FormSesiProps
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, 0.45)" },
+  overlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+  },
   container: { flexGrow: 1, justifyContent: "flex-end" },
   sheet: {
     backgroundColor: "#FFFFFF",
@@ -163,7 +366,13 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: { color: "#0F172A", fontSize: 22, lineHeight: 30, fontWeight: "700" },
-  label: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "600", marginTop: 16 },
+  label: {
+    color: "#334155",
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: "600",
+    marginTop: 16,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#CBD5E1",
@@ -173,6 +382,8 @@ const styles = StyleSheet.create({
     color: "#0F172A",
     marginTop: 8,
   },
+  row: { flexDirection: "row", gap: 12 },
+  col: { flex: 1 },
   hint: { color: "#64748B", fontSize: 14, lineHeight: 22, marginTop: 8 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   chip: {

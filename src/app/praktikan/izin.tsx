@@ -9,6 +9,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useDaftarIzinPraktikan } from "../../hooks/useIzinPraktikan";
 import { useJadwalPraktikan } from "../../hooks/useJadwalPraktikan";
 import { LABEL_STATUS_IZIN } from "../../utils/izinAsisten";
+import type { Sesi } from "../../types";
+import { teksWaktuSesi } from "../../utils/waktuSesi";
+
 
 export default function IzinPraktikanScreen() {
   const { sesiId } = useLocalSearchParams<{ sesiId?: string | string[] }>();
@@ -55,7 +58,7 @@ export default function IzinPraktikanScreen() {
           return (
             <View style={styles.card}>
               <Text style={styles.session}>{item.namaPraktikum}</Text>
-              <Text style={styles.subtitle}>{item.modul} · {item.waktu}</Text>
+              <Text style={styles.subtitle}>{item.modul} · {teksWaktuSesi(item)}</Text>
               {itemIzin ? (
                 <>
                   <Text style={[styles.status, styles[itemIzin.status]]}>{LABEL_STATUS_IZIN[itemIzin.status]}</Text>
