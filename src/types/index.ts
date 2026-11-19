@@ -53,12 +53,15 @@ export interface Kelas {
 export interface Sesi {
   id?: string;
   classId: string;
-  labId?: string;
-  namaPraktikum: string;
+  namaPraktikum: string;        // disalin dari nama kelas saat sesi dibuat
   modul: string;
-  waktu: string;
+  mulai?: Timestamp | null;     // baru
+  selesai?: Timestamp | null;   // baru
+  waktu?: string;               // lama: hanya untuk sesi lama, jangan dipakai lagi
   ruangan: string;
   status: SessionStatus;
+  seriId?: string | null;       // baru: penanda sesi berulang
+  pertemuanKe?: number | null;  // baru
 }
 
 /** Dokumen `sessions/{sessionId}/attendance/{uid}`. */

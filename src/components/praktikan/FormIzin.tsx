@@ -25,6 +25,7 @@ export function FormIzin({ uid, sessionId, onSelesai }: { uid: string; sessionId
     <View style={styles.card}>
       <Text style={styles.title}>Ajukan izin</Text>
       <Text style={styles.subtitle}>Tulis alasan ketidakhadiran untuk sesi ini.</Text>
+      <Text style={styles.subtitle}>Model lokal mengategorikan alasan menjadi sakit, keluarga, atau keperluan. Hasil hanya informasi pendukung; keputusan izin tetap oleh asisten.</Text>
       <TextInput
         value={alasan}
         onChangeText={setAlasan}

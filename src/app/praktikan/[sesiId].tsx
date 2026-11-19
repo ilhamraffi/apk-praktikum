@@ -85,7 +85,7 @@ export default function DetailSesiPraktikanScreen() {
         ) : sesi && kelas ? (
           <>
             {dariCache ? (
-              <Text accessibilityRole="status" style={styles.cacheNotice}>
+              <Text style={styles.cacheNotice}>
                 Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.
               </Text>
             ) : null}

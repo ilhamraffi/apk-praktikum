@@ -76,11 +76,6 @@ export default function JadwalAsistenScreen() {
                 <Text style={styles.brandName}>HadirLab</Text>
                 <Text style={styles.brandCaption}>Ruang asisten</Text>
               </View>
-              <Link href="/" dismissTo asChild>
-                <TouchableOpacity accessibilityRole="link" style={styles.dashboardButton}>
-                  <Text style={styles.dashboardText}>Dashboard</Text>
-                </TouchableOpacity>
-              </Link>
             </View>
 
             <View style={styles.headingRow}>
@@ -105,6 +100,11 @@ export default function JadwalAsistenScreen() {
               <Link href="/asisten/kelas" asChild>
                 <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn}>
                   <Text style={styles.secondaryText}>Kelola kelas & peserta</Text>
+                </TouchableOpacity>
+              </Link>
+              <Link href="/asisten/izin" asChild>
+                <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn}>
+                  <Text style={styles.secondaryText}>Pemeriksaan izin</Text>
                 </TouchableOpacity>
               </Link>
             </View>

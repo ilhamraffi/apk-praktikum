@@ -1,42 +1,31 @@
-const BATAS_WAKTU_AI = 10_000;
+// Model kategori alasan lokal (sakit/keluarga/keperluan), tanpa HTTP/paket native.
+// Kontrak Promise<string> dipertahankan untuk pemanggil pengajuan izin.
+import model from "../ai/kategori/model-kategori.json";
+import { createKategoriClassifier } from "../ai/kategori/classifier";
 
-interface ResponsAI {
-  kategori?: unknown;
-  category?: unknown;
-  label?: unknown;
-  result?: { kategori?: unknown; category?: unknown; label?: unknown };
-}
-
-function ambilKategori(data: ResponsAI): string | null {
-  const nilai = data.kategori ?? data.category ?? data.label
-    ?? data.result?.kategori ?? data.result?.category ?? data.result?.label;
-  return typeof nilai === "string" && nilai.trim() ? nilai.trim() : null;
-}
-
-export async function klasifikasikanAlasan(alasan: string): Promise<string> {
-  const endpoint = process.env.EXPO_PUBLIC_AI_API_URL?.trim();
-  if (!endpoint) throw new Error("Endpoint klasifikasi AI belum dikonfigurasi.");
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), BATAS_WAKTU_AI);
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ alasan }),
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`Layanan AI mengembalikan HTTP ${response.status}.`);
-    const data = await response.json() as ResponsAI;
-    const kategori = ambilKategori(data);
-    if (!kategori) throw new Error("Respons AI tidak memuat kategori.");
-    return kategori;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Layanan AI tidak merespons dalam batas waktu.");
-    }
-    throw error;
-  } finally {
-    clearTimeout(timer);
+export class TeksTidakDikenaliKategori extends Error {
+  constructor() {
+    super("Teks belum dapat dikategorikan oleh model lokal. Pengajuan tetap dapat diperiksa asisten.");
+    this.name = "TeksTidakDikenaliKategori";
   }
 }
+
+const LABEL_KATEGORI = new Set(["sakit", "keluarga", "keperluan"]);
+
+let classify: ReturnType<typeof createKategoriClassifier> | undefined;
+
+export async function klasifikasikanAlasan(alasan: string): Promise<string> {
+  // Lazy singleton: model disiapkan sekali, tidak pada setiap render/pengajuan.
+  classify ??= createKategoriClassifier(model);
+  const prediction = classify(alasan);
+  if (prediction.label === null || prediction.status !== "predicted") {
+    throw new TeksTidakDikenaliKategori();
+  }
+  if (!LABEL_KATEGORI.has(prediction.label)) {
+    throw new Error("Label model kategori tidak valid.");
+  }
+  return prediction.label;
+}
+
+/** @deprecated Nama lama sebelum model kategori; dipertahankan agar import lama tetap jalan. */
+export const TeksTidakDikenaliEDOM = TeksTidakDikenaliKategori;

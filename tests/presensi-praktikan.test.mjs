@@ -84,7 +84,7 @@ test("presensi memakai profil server, ID dokumen UID, kontrak rekap, dan serverT
   assert.equal(h.writes.length, 1);
   assert.equal(h.writes[0].path, attendancePath);
   assert.deepEqual(h.writes[0].data, {
-    nama: "Andi", nim: "230001", statusKehadiran: "Hadir", catatan: "catatan saya", waktu: h.serverTime,
+    uid: request.uid, nama: "Andi", nim: "230001", statusKehadiran: "Hadir", catatan: "catatan saya", waktu: h.serverTime,
   });
   // Pembaca rekap Ilham harus bisa menghitung dokumen yang kita tulis.
   const { hitungRekapPresensi } = loadSource("src/components/asisten/dataRekapPresensi.ts");

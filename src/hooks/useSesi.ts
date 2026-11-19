@@ -16,6 +16,7 @@ import {
 import { db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
 import type { Kelas, Sesi } from "../types";
+import { tambahMinggu, urutkanSesi } from "../utils/waktuSesi";
 
 /** Daftar sesi real-time (opsional difilter per kelas). */
 export function useDaftarSesi(kelasId?: string) {
@@ -30,7 +31,11 @@ export function useDaftarSesi(kelasId?: string) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSesi(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Sesi));
+        setSesi(
+          snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }) as Sesi)
+            .sort(urutkanSesi),
+        );
         setError(null);
         setLoading(false);
       },
@@ -107,18 +112,51 @@ export function useSesiDetail(sesiId?: string) {
   };
 }
 
-export type InputSesi = Omit<Sesi, "id" | "status">;
+/** Input form sesi. `mulai`/`selesai` berupa Date (disimpan Firestore sebagai Timestamp). */
+export interface InputSesi {
+  classId: string;
+  namaPraktikum: string; // disalin dari nama kelas
+  modul: string;
+  mulai: Date;
+  selesai: Date;
+  ruangan: string;
+}
 
-export async function buatSesi(input: InputSesi): Promise<string> {
-  const ref = await addDoc(collection(db, "sessions"), {
-    ...input,
-    namaPraktikum: input.namaPraktikum.trim(),
-    modul: input.modul.trim(),
-    waktu: input.waktu.trim(),
-    ruangan: input.ruangan.trim(),
-    status: "BELUM_DIBUKA",
-  });
-  return ref.id;
+/** Batas jumlah pertemuan berulang (kira-kira satu semester). */
+export const MAKS_PERTEMUAN = 20;
+
+/**
+ * Buat satu sesi, atau sesi berulang tiap minggu (`jumlahPertemuan` > 1).
+ * Setiap pertemuan menjadi dokumen sesi sendiri (status & presensi terpisah),
+ * dan semuanya ditulis dalam satu batch: berhasil semua atau gagal semua.
+ */
+export async function buatSesi(
+  input: InputSesi,
+  jumlahPertemuan = 1,
+): Promise<string[]> {
+  const n = Math.max(1, Math.min(MAKS_PERTEMUAN, Math.floor(jumlahPertemuan)));
+  const seriId = n > 1 ? doc(collection(db, "sessions")).id : null;
+  const batch = writeBatch(db);
+  const ids: string[] = [];
+
+  for (let i = 0; i < n; i++) {
+    const ref = doc(collection(db, "sessions"));
+    ids.push(ref.id);
+    batch.set(ref, {
+      classId: input.classId,
+      namaPraktikum: input.namaPraktikum.trim(),
+      modul: n > 1 ? `Pertemuan ${i + 1}` : input.modul.trim(),
+      mulai: tambahMinggu(input.mulai, i),
+      selesai: tambahMinggu(input.selesai, i),
+      ruangan: input.ruangan.trim(),
+      status: "BELUM_DIBUKA",
+      seriId,
+      pertemuanKe: n > 1 ? i + 1 : null,
+    });
+  }
+
+  await batch.commit();
+  return ids;
 }
 
 export async function perbaruiSesi(

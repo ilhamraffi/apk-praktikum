@@ -33,8 +33,8 @@ function DetailIzin({ asistenUid, izinId }: { asistenUid: string; izinId: string
           <Empty title="Pengajuan tidak ditemukan" description="Pengajuan mungkin sudah dihapus. Kembali ke daftar untuk melihat pengajuan lainnya." />
         ) : (
           <>
-            {hasil.dariCache ? <Text accessibilityRole="status" style={styles.notice}>Menampilkan data tersimpan di perangkat. Menunggu data terbaru dari server.</Text> : null}
-            {hasil.tertunda ? <Text accessibilityRole="status" style={styles.notice}>Perubahan belum dikonfirmasi server.</Text> : null}
+            {hasil.dariCache ? <Text style={styles.notice}>Menampilkan data tersimpan di perangkat. Menunggu data terbaru dari server.</Text> : null}
+            {hasil.tertunda ? <Text  style={styles.notice}>Perubahan belum dikonfirmasi server.</Text> : null}
             <View style={styles.card}>
               <StatusPengajuanIzin status={pengajuan.status} />
               <IdentitasPengajuanIzin asistenUid={asistenUid} pengajuan={pengajuan} />

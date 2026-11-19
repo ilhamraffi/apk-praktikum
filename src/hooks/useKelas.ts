@@ -70,10 +70,16 @@ export async function perbaruiKelas(
   id: string,
   input: { nama: string; kode: string },
 ): Promise<void> {
-  await updateDoc(doc(db, "classes", id), {
-    nama: input.nama.trim(),
-    kode: input.kode.trim(),
-  });
+  const nama = input.nama.trim();
+  await updateDoc(doc(db, "classes", id), { nama, kode: input.kode.trim() });
+  const sesiSnap = await getDocs(
+    query(collection(db, "sessions"), where("classId", "==", id)),
+  );
+  if (!sesiSnap.empty) {
+    const batch = writeBatch(db);
+    sesiSnap.docs.forEach((d) => batch.update(d.ref, { namaPraktikum: nama }));
+    await batch.commit();
+  }
 }
 
 /** Hapus kelas beserta semua sesinya (dan presensi sesi). */

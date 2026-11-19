@@ -1,0 +1,79 @@
+{
+  "dataset": {
+    "file": "ml/data/alasan_izin.csv",
+    "sha256": "0ab4cc7f33a83bca5177e48ab6e5d5ea7f649083689e8ab156bb66ccce25aaa5",
+    "rows": 136,
+    "per_label": {
+      "keluarga": 45,
+      "keperluan": 46,
+      "sakit": 45
+    },
+    "source": "contoh sintetis untuk menguji alur; ganti dengan alasan izin nyata yang dianonimkan",
+    "trained_at": "2026-11-17T18:08:15+00:00"
+  },
+  "evaluation": {
+    "holdout": {
+      "test_size": 0.25,
+      "train_rows": 102,
+      "test_rows": 34,
+      "accuracy": 0.9706,
+      "macro_f1": 0.9696,
+      "per_label": {
+        "keluarga": {
+          "precision": 1.0,
+          "recall": 0.9091,
+          "f1": 0.9524,
+          "support": 11
+        },
+        "keperluan": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 12
+        },
+        "sakit": {
+          "precision": 0.9167,
+          "recall": 1.0,
+          "f1": 0.9565,
+          "support": 11
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "keluarga",
+          "keperluan",
+          "sakit"
+        ],
+        "rows": [
+          [
+            10,
+            0,
+            1
+          ],
+          [
+            0,
+            12,
+            0
+          ],
+          [
+            0,
+            0,
+            11
+          ]
+        ]
+      }
+    },
+    "cross_validation": {
+      "folds": 5,
+      "accuracy_mean": 0.8828,
+      "accuracy_std": 0.0412,
+      "scores": [
+        0.8214,
+        0.8519,
+        0.8889,
+        0.9259,
+        0.9259
+      ]
+    }
+  }
+}

@@ -1,6 +1,8 @@
 import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { View } from "react-native";
+import { ActiveUserBar } from "../components/TampilanBersama";
 
 function RouteGuard() {
   const { user, role, loading } = useAuth();
@@ -31,7 +33,12 @@ function RouteGuard() {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+    return (
+    <View style={{ flex: 1 }}>
+      <ActiveUserBar />
+      <Stack screenOptions={{ headerShown: false }} />
+    </View>
+  );
 }
 
 export default function RootLayout() {

@@ -218,10 +218,8 @@ Memenuhi acceptance criteria • tiga alur demo berjalan di perangkat nyata • 
 ## 13. Catatan teknis & keputusan terbuka
 
 - **Perubahan dari Sprint 2:** presensi dipindah ke halaman sendiri, terpisah dari detail sesi; kehadiran hanya ditulis lewat jalur validasi lokasi; `ruangan` teks digantikan rujukan `labId`; Rules presensi diperketat.
-- **Perbaikan fitur dari sprint 2**
-Masukan dan koreksi dari asprak berupa format waktu yang diubah dari tipe string menjadi time dan panel navigasi yang lebih lincah bagi pengguna mobile.
--**Permintaan teknis dari PM sprint 2**
-Ini Maps API & deployment perlu akses firebasenya. Bisa dikasi ke PM sprint 3 atau yg punya aksesnya bisa nambahin aja 
+- **Perbaikan fitur dari sprint 2** Masukan dan koreksi dari asprak berupa format waktu yang diubah dari tipe string menjadi time dan panel navigasi yang lebih lincah bagi pengguna mobile.
+-**Permintaan teknis dari PM sprint 2** Ini Maps API & deployment perlu akses firebasenya. Bisa dikasi ke PM sprint 3 atau yg punya aksesnya bisa nambahin aja 
 - **Validasi lokasi di sisi penyimpanan:** dipilih Cloud Function callable `catatPresensi`. Function menghitung jarak, memeriksa status sesi/keanggotaan/radius, lalu menulis attendance secara atomik. Client tidak boleh menulis attendance langsung. Deployment Functions membutuhkan paket Blaze pada project Firebase.
 - **Push notification** membutuhkan pengirim di sisi server; tidak aman dikirim langsung dari HP asisten.
 - **Maps API key:** dibuat dan dibatasi oleh PM. *Diisi setelah dibuat:* `____`.

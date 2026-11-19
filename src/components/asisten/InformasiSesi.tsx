@@ -1,17 +1,18 @@
 // src/components/asisten/InformasiSesi.tsx
 import { StyleSheet, Text, View } from "react-native";
 import type { Sesi } from "../../types";
+import { teksWaktuSesi } from "../../utils/waktuSesi";
 
 type InformasiSesiProps = {
-  sesi: Pick<Sesi, "waktu" | "ruangan">;
+  sesi: Pick<Sesi, "mulai" | "selesai" | "waktu" | "ruangan">;
   kelasLabel?: string;
 };
 
 export function InformasiSesi({ sesi, kelasLabel }: InformasiSesiProps) {
   const informasi = [
     { label: "Kelas", nilai: kelasLabel ?? "" },
-    { label: "Waktu", nilai: sesi.waktu },
     { label: "Ruangan", nilai: sesi.ruangan },
+    { label: "Waktu", nilai: teksWaktuSesi(sesi) },
   ];
 
   return (

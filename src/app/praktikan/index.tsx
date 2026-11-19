@@ -66,11 +66,7 @@ export default function JadwalPraktikanScreen() {
                 <Text style={styles.brandName}>HadirLab</Text>
                 <Text style={styles.brandCaption}>Ruang praktikan</Text>
               </View>
-              <Link href="/" dismissTo asChild>
-                <TouchableOpacity style={styles.dashboardButton} accessibilityRole="link">
-                  <Text style={styles.dashboardText}>Dashboard</Text>
-                </TouchableOpacity>
-              </Link>
+              
             </View>
             <View style={styles.headingRow}>
               <Text accessibilityRole="header" style={styles.title}>Jadwal saya</Text>
@@ -88,7 +84,7 @@ export default function JadwalPraktikanScreen() {
               </TouchableOpacity>
             </Link>
             {dariCache && !error ? (
-              <Text accessibilityRole="status" style={styles.cacheNotice}>
+              <Text  style={styles.cacheNotice}>
                 Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.
               </Text>
             ) : null}

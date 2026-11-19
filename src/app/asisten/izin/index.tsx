@@ -40,8 +40,8 @@ function DaftarIzin({ asistenUid }: { asistenUid: string }) {
                 </TouchableOpacity>
               ))}
             </View>
-            {hasil.dariCache && !hasil.error ? <Text accessibilityRole="status" style={styles.notice}>Menampilkan data tersimpan di perangkat. Tunggu koneksi server untuk memberikan keputusan.</Text> : null}
-            {hasil.tertunda && !hasil.error ? <Text accessibilityRole="status" style={styles.notice}>Ada perubahan yang sedang disinkronkan.</Text> : null}
+            {hasil.dariCache && !hasil.error ? <Text style={styles.notice}>Menampilkan data tersimpan di perangkat. Tunggu koneksi server untuk memberikan keputusan.</Text> : null}
+            {hasil.tertunda && !hasil.error ? <Text  style={styles.notice}>Ada perubahan yang sedang disinkronkan.</Text> : null}
           </View>
         }
         renderItem={({ item }) => (
