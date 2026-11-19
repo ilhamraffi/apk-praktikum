@@ -1,72 +1,30 @@
 // SRS-03/04 praktikan — milik Fauzan. Kontrak attendance mengikuti src/types.
 import { useCallback, useEffect, useState } from "react";
-import { doc, onSnapshot, runTransaction, serverTimestamp } from "@react-native-firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { doc, onSnapshot } from "@react-native-firebase/firestore";
+import { db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
-import type { CatatanPresensi, Kelas, ProfilUser, Sesi } from "../types";
+import { catatPresensi } from "../lib/presensi";
+import type { CatatanPresensi, Koordinat } from "../types";
 import { validasiCatatanPresensi } from "../utils/presensiPraktikan";
 
 interface InputPresensi {
   uid: string;
   sesiId: string;
   catatan: string;
+  koordinat: Koordinat;
 }
 
-/** Transaksi gagal saat offline; tidak mengantre presensi untuk sesi yang bisa
- * sudah ditutup saat koneksi pulih. Tidak ada efek UI di callback transaksi. */
+/** Presensi Sprint 3 selalu divalidasi dan ditulis oleh Cloud Function. */
 export async function catatPresensiPraktikan(input: InputPresensi): Promise<void> {
-  const { uid, sesiId } = input;
+  const { uid, sesiId, koordinat } = input;
   if (!uid || !sesiId || uid.includes("/") || sesiId.includes("/")) {
     throw new Error("Identitas akun atau sesi tidak valid.");
   }
   const catatan = validasiCatatanPresensi(input.catatan);
-  const cekAkun = () => {
-    if (auth.currentUser?.uid !== uid) {
-      throw new Error("Sesi akun berubah. Silakan masuk ulang sebelum melakukan presensi.");
-    }
-  };
-  cekAkun();
-  const sesiRef = doc(db, "sessions", sesiId);
-  const presensiRef = doc(db, "sessions", sesiId, "attendance", uid);
-
-  await runTransaction(db, async (transaksi) => {
-    cekAkun();
-    const sesiSnap = await transaksi.get(sesiRef);
-    if (!sesiSnap.exists()) throw new Error("Sesi praktikum tidak ditemukan.");
-    const sesi = sesiSnap.data() as Sesi;
-    if (typeof sesi.classId !== "string" || !sesi.classId || sesi.classId.includes("/")) {
-      throw new Error("Data kelas sesi tidak valid. Hubungi asisten.");
-    }
-    const [profilSnap, kelasSnap, presensiSnap] = await Promise.all([
-      transaksi.get(doc(db, "users", uid)),
-      transaksi.get(doc(db, "classes", sesi.classId)),
-      transaksi.get(presensiRef),
-    ]);
-    const profil = profilSnap.data() as ProfilUser | undefined;
-    const kelas = kelasSnap.data() as Kelas | undefined;
-    if (!profilSnap.exists() || profil?.role !== "PRAKTIKAN") {
-      throw new Error("Presensi hanya dapat dilakukan oleh akun praktikan.");
-    }
-    if (!kelasSnap.exists() || !Array.isArray(kelas?.pesertaUids) || !kelas.pesertaUids.includes(uid)) {
-      throw new Error("Kamu tidak terdaftar sebagai peserta kelas ini.");
-    }
-    if (presensiSnap.exists()) throw new Error("Presensi untuk sesi ini sudah tercatat.");
-    if (sesi.status !== "DIBUKA") {
-      throw new Error(sesi.status === "DITUTUP" ? "Sesi sudah ditutup oleh asisten." : "Sesi belum dibuka oleh asisten.");
-    }
-    if (typeof profil.nama !== "string" || !profil.nama.trim() || typeof profil.nim !== "string" || !profil.nim.trim()) {
-      throw new Error("Nama atau NIM pada profil belum lengkap. Hubungi asisten.");
-    }
-    cekAkun();
-    transaksi.set(presensiRef, {
-      uid,
-      nama: profil.nama.trim(),
-      nim: profil.nim.trim(),
-      statusKehadiran: "Hadir",
-      catatan,
-      waktu: serverTimestamp(),
-    });
-  });
+  if (koordinat.akurasiMeter == null) {
+    throw new Error("Lokasi perangkat belum tersedia.");
+  }
+  await catatPresensi({ sessionId: sesiId, catatan, koordinat });
 }
 
 interface DataPresensiPraktikan {
