@@ -58,7 +58,8 @@ export interface Sesi {
   mulai?: Timestamp | null;     // baru
   selesai?: Timestamp | null;   // baru
   waktu?: string;               // lama: hanya untuk sesi lama, jangan dipakai lagi
-  ruangan: string;
+  ruangan: string;              // keterangan tampilan (diisi nama laboratorium)
+  labId?: string;               // rujukan `labs/{labId}` untuk validasi lokasi
   status: SessionStatus;
   seriId?: string | null;       // baru: penanda sesi berulang
   pertemuanKe?: number | null;  // baru

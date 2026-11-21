@@ -17,7 +17,11 @@ export default function AsistenLayout() {
       backBehavior="history"
       screenOptions={{ headerShown: false }}
       tabBar={(props) => (
-        <BilahTab {...props} item={ITEM} alias={{ "[sesiId]": "index" }} />
+        <BilahTab
+          {...props}
+          item={ITEM}
+          alias={{ "[sesiId]": "index", lab: "kelas" }}
+        />
       )}
     >
       <Tabs.Screen name="index" />
@@ -25,6 +29,7 @@ export default function AsistenLayout() {
       <Tabs.Screen name="izin" />
       <Tabs.Screen name="profil" />
       <Tabs.Screen name="[sesiId]" />
+      <Tabs.Screen name="lab" />
     </Tabs>
   );
 }

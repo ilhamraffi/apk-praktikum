@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MAKS_PERTEMUAN, type InputSesi } from "../../hooks/useSesi";
 import { pesanError } from "../../lib/errors";
-import type { Kelas, Sesi } from "../../types";
+import type { Kelas, Lab, Sesi } from "../../types";
 import {
   formatJamInput,
   formatTanggalInput,
@@ -33,6 +33,7 @@ import { warna } from "../../theme";
 type FormSesiProps = {
   awal?: Sesi | null;
   daftarKelas: Kelas[];
+  daftarLab: Lab[];
   onBatal: () => void;
   onSimpan: (input: InputSesi, jumlahPertemuan: number) => Promise<unknown>;
 };
@@ -42,6 +43,7 @@ const JUMLAH_SEMESTER = 14; // perkiraan jumlah pertemuan dalam satu semester
 export function FormSesi({
   awal,
   daftarKelas,
+  daftarLab,
   onBatal,
   onSimpan,
 }: FormSesiProps) {
@@ -61,13 +63,14 @@ export function FormSesi({
   const [jamSelesai, setJamSelesai] = useState(
     selesaiAwal ? formatJamInput(selesaiAwal) : "",
   );
-  const [ruangan, setRuangan] = useState(awal?.ruangan ?? "");
+  const [labId, setLabId] = useState(awal?.labId ?? "");
   const [ulang, setUlang] = useState(false);
   const [jumlah, setJumlah] = useState(String(JUMLAH_SEMESTER));
   const [memproses, setMemproses] = useState(false);
   const [error, setError] = useState("");
 
   const kelasTerpilih = daftarKelas.find((k) => k.id === classId);
+  const labTerpilih = daftarLab.find((l) => l.id === labId);
   const namaPraktikum = kelasTerpilih?.nama ?? awal?.namaPraktikum ?? "";
   const modeTambah = !awal;
   const berulang = modeTambah && ulang;
@@ -93,8 +96,12 @@ export function FormSesi({
       setError("Modul wajib diisi.");
       return;
     }
-    if (!ruangan.trim()) {
-      setError("Ruangan wajib diisi.");
+    if (!labTerpilih) {
+      setError(
+        daftarLab.length === 0
+          ? "Belum ada laboratorium. Buat laboratorium terlebih dahulu."
+          : "Pilih laboratorium untuk sesi ini.",
+      );
       return;
     }
     const mulai = gabungWaktu(tanggal, jamMulai);
@@ -129,7 +136,8 @@ export function FormSesi({
           modul: modul.trim(),
           mulai,
           selesai,
-          ruangan: ruangan.trim(),
+          ruangan: labTerpilih.nama.trim(),
+          labId: labTerpilih.id,
         },
         berulang ? jumlahPertemuan : 1,
       );
@@ -237,13 +245,32 @@ export function FormSesi({
               </View>
             </View>
 
-            <Text style={styles.label}>Ruangan</Text>
-            <TextInput
-              style={styles.input}
-              value={ruangan}
-              onChangeText={setRuangan}
-              placeholder="Contoh: Lab Komputasi Dasar E301"
-            />
+            <Text style={styles.label}>Laboratorium</Text>
+            {daftarLab.length === 0 ? (
+              <Text style={styles.hint}>
+                Belum ada laboratorium. Buat laboratorium terlebih dahulu di
+                halaman Laboratorium.
+              </Text>
+            ) : (
+              <View style={styles.chipRow}>
+                {daftarLab.map((l) => {
+                  const aktif = labId === l.id;
+                  return (
+                    <TouchableOpacity
+                      key={l.id}
+                      onPress={() => setLabId(l.id ?? "")}
+                      style={[styles.chip, aktif && styles.chipActive]}
+                    >
+                      <Text
+                        style={[styles.chipText, aktif && styles.chipTextActive]}
+                      >
+                        {l.nama}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
             {modeTambah ? (
               <>
