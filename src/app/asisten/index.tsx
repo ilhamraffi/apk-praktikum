@@ -22,6 +22,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useWajibAsisten } from "../../hooks/useWajibAsisten";
 import { useDaftarKelas } from "../../hooks/useKelas";
+import { useDaftarLab } from "../../hooks/useLab";
 import { buatSesi, useDaftarSesi } from "../../hooks/useSesi";
 import { radius, warna } from "../../theme";
 import { ringkasSesi } from "../../utils/ringkasanSesi";
@@ -31,6 +32,7 @@ export default function JadwalAsistenScreen() {
   const { loading: loadingAuth, boleh } = useWajibAsisten();
   const { sesi, loading, error } = useDaftarSesi();
   const { mapKelas } = useDaftarKelas();
+  const { mapLab } = useDaftarLab();
   const [formTerbuka, setFormTerbuka] = useState(false);
 
   if (loadingAuth) {
@@ -85,6 +87,16 @@ export default function JadwalAsistenScreen() {
               <KartuStatistik angka={ringkas.total} label="Total sesi" />
             </View>
 
+            <Link href="/asisten/lab" asChild>
+              <TouchableOpacity
+                accessibilityRole="link"
+                activeOpacity={0.85}
+                style={styles.tombolLab}
+              >
+                <Text style={styles.tombolLabTeks}>Atur laboratorium</Text>
+              </TouchableOpacity>
+            </Link>
+
             <View style={styles.seksi}>
               <Text accessibilityRole="header" style={styles.seksiJudul}>
                 Jadwal praktikum
@@ -117,6 +129,7 @@ export default function JadwalAsistenScreen() {
       {formTerbuka ? (
         <FormSesi
           daftarKelas={Array.from(mapKelas.values())}
+          daftarLab={Array.from(mapLab.values())}
           onBatal={() => setFormTerbuka(false)}
           onSimpan={buatSesi}
         />
@@ -138,6 +151,16 @@ const styles = StyleSheet.create({
   separator: { height: 16 },
   header: { marginBottom: 20, gap: 20 },
   statistik: { flexDirection: "row", gap: 10 },
+  tombolLab: {
+    minHeight: 48,
+    borderRadius: radius.pil,
+    borderWidth: 1,
+    borderColor: warna.garis,
+    backgroundColor: warna.kartuKaca,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tombolLabTeks: { color: warna.utama, fontSize: 14, fontWeight: "700" },
   seksi: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   seksiJudul: { flexShrink: 1, color: warna.teks, fontSize: 20, lineHeight: 28, fontWeight: "700" },
   tombolTambah: {

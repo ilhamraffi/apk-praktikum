@@ -118,7 +118,8 @@ export interface InputSesi {
   modul: string;
   mulai: Date;
   selesai: Date;
-  ruangan: string;
+  ruangan: string; // keterangan tampilan (nama laboratorium)
+  labId?: string; // rujukan `labs/{labId}` untuk validasi lokasi
 }
 
 /** Batas jumlah pertemuan berulang (kira-kira satu semester). */
@@ -148,6 +149,7 @@ export async function buatSesi(
       mulai: tambahMinggu(input.mulai, i),
       selesai: tambahMinggu(input.selesai, i),
       ruangan: input.ruangan.trim(),
+      labId: input.labId ?? null,
       status: "BELUM_DIBUKA",
       seriId,
       pertemuanKe: n > 1 ? i + 1 : null,

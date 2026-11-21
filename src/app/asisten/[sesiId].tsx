@@ -18,6 +18,7 @@ import { StatusSesi } from "../../components/asisten/StatusSesi";
 import { Loading } from "../../components/shared/StatusLayar";
 import { useWajibAsisten } from "../../hooks/useWajibAsisten";
 import { useDaftarKelas } from "../../hooks/useKelas";
+import { useDaftarLab } from "../../hooks/useLab";
 import { usePresensiSesi } from "../../hooks/usePresensi";
 import {
   hapusSesi,
@@ -35,6 +36,7 @@ export default function DetailSesiAsistenScreen() {
   const { catatan, loading: loadingPresensi, error: errorPresensi } =
     usePresensiSesi(id);
   const { mapKelas } = useDaftarKelas();
+  const { mapLab } = useDaftarLab();
 
   const [formTerbuka, setFormTerbuka] = useState(false);
   const [hapusTerbuka, setHapusTerbuka] = useState(false);
@@ -168,6 +170,7 @@ export default function DetailSesiAsistenScreen() {
           key={sesi.id}
           awal={sesi}
           daftarKelas={Array.from(mapKelas.values())}
+          daftarLab={Array.from(mapLab.values())}
           onBatal={() => setFormTerbuka(false)}
           onSimpan={(input) => perbaruiSesi(sesi.id!, input)}
         />

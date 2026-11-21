@@ -2,7 +2,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { CatatanPresensi, SessionStatus } from "../../types";
 import { ErrorBanner, Loading } from "../shared/StatusLayar";
-import { formatWaktuPresensi, hitungRekapPresensi } from "./dataRekapPresensi";
+import { formatJarakPresensi, formatWaktuPresensi, hitungRekapPresensi } from "./dataRekapPresensi";
 import { radius, warna } from "../../theme";
 
 const pesanKosong: Record<SessionStatus, string> = {
@@ -123,6 +123,12 @@ export function RekapPresensi({
                         {presensi.nim?.trim() || "NIM belum tersedia"} ·{" "}
                         {formatWaktuPresensi(presensi.waktu)}
                       </Text>
+                      {typeof presensi.jarakMeter === "number" &&
+                      Number.isFinite(presensi.jarakMeter) ? (
+                        <Text style={styles.location}>
+                          Jarak ke lab: {formatJarakPresensi(presensi.jarakMeter)}
+                        </Text>
+                      ) : null}
                     </View>
                     <Text
                       style={[
@@ -201,6 +207,7 @@ const styles = StyleSheet.create({
   },
   studentInfo: { flex: 1, gap: 2 },
   name: { color: warna.teks, fontSize: 16, lineHeight: 22, fontWeight: "700" },
+  location: { color: warna.teksRedup, fontSize: 12, lineHeight: 18 },
   attendanceBadge: {
     paddingHorizontal: 14,
     paddingVertical: 6,

@@ -61,6 +61,23 @@ export function hitungRekapPresensi(
   return { catatan, jumlahHadir, jumlahIzin, total, persentase, jumlahDiabaikan };
 }
 
+/** Format jarak presensi ke laboratorium (meter, atau km bila besar). */
+export function formatJarakPresensi(
+  jarakMeter: number | null | undefined,
+): string {
+  if (jarakMeter == null || !Number.isFinite(jarakMeter) || jarakMeter < 0) {
+    return "";
+  }
+  if (jarakMeter >= 1000) {
+    return `${(jarakMeter / 1000).toFixed(2).replace(".", ",")} km`;
+  }
+  const dibulatkan = Math.round(jarakMeter * 10) / 10;
+  const teks = Number.isInteger(dibulatkan)
+    ? String(dibulatkan)
+    : dibulatkan.toFixed(1).replace(".", ",");
+  return `${teks} m`;
+}
+
 /** Format waktu presensi (menerima Timestamp Firestore atau string). */
 export function formatWaktuPresensi(nilai: unknown): string {
   // Timestamp Firestore (objek dengan toDate()).
