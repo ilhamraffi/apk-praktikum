@@ -5,7 +5,7 @@ import { db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
 import { catatPresensi } from "../lib/presensi";
 import type { CatatanPresensi, Koordinat } from "../types";
-import { validasiCatatanPresensi } from "../utils/presensiPraktikan";
+import { siapkanCatatanPresensi } from "../utils/presensiPraktikan";
 
 interface InputPresensi {
   uid: string;
@@ -20,8 +20,14 @@ export async function catatPresensiPraktikan(input: InputPresensi): Promise<void
   if (!uid || !sesiId || uid.includes("/") || sesiId.includes("/")) {
     throw new Error("Identitas akun atau sesi tidak valid.");
   }
-  const catatan = validasiCatatanPresensi(input.catatan);
-  if (koordinat.akurasiMeter == null) {
+  const catatan = siapkanCatatanPresensi(input.catatan);
+  if (
+    !koordinat ||
+    !Number.isFinite(koordinat.latitude) ||
+    !Number.isFinite(koordinat.longitude) ||
+    koordinat.akurasiMeter == null ||
+    !Number.isFinite(koordinat.akurasiMeter)
+  ) {
     throw new Error("Lokasi perangkat belum tersedia.");
   }
   await catatPresensi({ sessionId: sesiId, catatan, koordinat });

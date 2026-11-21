@@ -16,13 +16,20 @@ export default function PraktikanLayout() {
     <Tabs
       backBehavior="history"
       screenOptions={{ headerShown: false }}
-      tabBar={(props) => <BilahTab {...props} item={ITEM} alias={{ "[sesiId]": "index" }} />}
+      tabBar={(props) => (
+        <BilahTab
+          {...props}
+          item={ITEM}
+          alias={{ "[sesiId]": "index", presensi: "index" }}
+        />
+      )}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="riwayat" />
       <Tabs.Screen name="izin" />
       <Tabs.Screen name="profil" />
       <Tabs.Screen name="[sesiId]" />
+      <Tabs.Screen name="presensi" />
     </Tabs>
   );
 }

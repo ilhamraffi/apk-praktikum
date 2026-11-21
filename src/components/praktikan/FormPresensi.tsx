@@ -64,6 +64,7 @@ function IsiFormPresensi({ sesi, onClose, onSubmit, pesanNonaktif }: Props) {
             <TextInput
               accessibilityLabel="Catatan presensi"
               value={catatan} onChangeText={setCatatan} placeholder="Tambahkan catatan"
+              placeholderTextColor={warna.placeholder}
               multiline maxLength={BATAS_CATATAN_PRESENSI} editable={!memproses && !pesanNonaktif}
               style={styles.input}
             />

@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { CatatanPresensi } from "../../types";
-import { formatWaktuPresensiPraktikan } from "../../utils/presensiPraktikan";
+import { formatJarakMeter, formatWaktuPresensiPraktikan } from "../../utils/presensiPraktikan";
 import { radius, warna } from "../../theme";
 
 export function RingkasanPresensi({ presensi, tertunda = false }: { presensi: CatatanPresensi; tertunda?: boolean }) {
+  const punyaJarak = typeof presensi.jarakMeter === "number" && Number.isFinite(presensi.jarakMeter);
+
   return (
     <View accessibilityLiveRegion="polite" style={styles.container}>
       <View style={styles.topRow}>
@@ -26,6 +28,12 @@ export function RingkasanPresensi({ presensi, tertunda = false }: { presensi: Ca
         <Text style={styles.label}>Waktu tercatat</Text>
         <Text style={styles.value}>{formatWaktuPresensiPraktikan(presensi.waktu)}</Text>
       </View>
+      {punyaJarak ? (
+        <View style={styles.row}>
+          <Text style={styles.label}>Jarak tercatat</Text>
+          <Text style={styles.value}>{formatJarakMeter(presensi.jarakMeter)}</Text>
+        </View>
+      ) : null}
       {presensi.catatan ? (
         <View style={styles.row}>
           <Text style={styles.label}>Catatan</Text>
