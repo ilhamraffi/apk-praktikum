@@ -1,20 +1,17 @@
 // src/app/praktikan/[sesiId].tsx
-// SRS-02 praktikan: detail hanya diambil dari jadwal kelas pengguna.
+// SRS-02 & SRS-09 praktikan: detail sesi terpisah dari halaman presensi lokasi.
 import { Link, Redirect, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { InformasiSesi } from "../../components/asisten/InformasiSesi";
 import { StatusSesi } from "../../components/asisten/StatusSesi";
+import { RingkasanPresensi } from "../../components/praktikan/RingkasanPresensi";
 import { ErrorBanner, Loading } from "../../components/shared/StatusLayar";
 import { useAuth } from "../../context/AuthContext";
 import { useJadwalPraktikan } from "../../hooks/useJadwalPraktikan";
-import { useLokasiPerangkat } from "../../hooks/useLokasiPerangkat";
-import { catatPresensiPraktikan, usePresensiPraktikan } from "../../hooks/usePresensiPraktikan";
-import { FormPresensi } from "../../components/praktikan/FormPresensi";
-import { RingkasanPresensi } from "../../components/praktikan/RingkasanPresensi";
+import { usePresensiPraktikan } from "../../hooks/usePresensiPraktikan";
+import { radius, warna } from "../../theme";
 import type { Sesi } from "../../types";
-import { warna } from "../../theme";
 
 export default function DetailSesiPraktikanScreen() {
   const { sesiId } = useLocalSearchParams<{ sesiId?: string | string[] }>();
@@ -74,7 +71,7 @@ export default function DetailSesiPraktikanScreen() {
               <Text accessible={false} style={styles.backArrow}>‹</Text>
             </TouchableOpacity>
           </Link>
-          <Text accessibilityRole="header" style={styles.topTitle}>Presensi praktikum</Text>
+          <Text accessibilityRole="header" style={styles.topTitle}>Detail sesi</Text>
         </View>
         {error ? (
           <View style={styles.feedback}>
@@ -107,7 +104,7 @@ export default function DetailSesiPraktikanScreen() {
             </View>
             <View style={styles.card}>
               <Text accessibilityRole="header" style={styles.sectionTitle}>Status & kehadiran</Text>
-              <BagianPresensiPraktikan key={`${uid}:${id}`} uid={user.uid} sesi={sesi} dariCache={dariCache} />
+              <BagianStatusKehadiran key={`${uid}:${id}`} uid={user.uid} sesi={sesi} />
             </View>
             <View style={styles.linkGroup}>
               <Link href={{ pathname: "/praktikan/izin", params: { sesiId: id } }} asChild>
@@ -134,32 +131,23 @@ export default function DetailSesiPraktikanScreen() {
   );
 }
 
-function BagianPresensiPraktikan({ uid, sesi, dariCache }: { uid: string; sesi: Sesi; dariCache: boolean }) {
-  const [formTerbuka, setFormTerbuka] = useState(false);
+function BagianStatusKehadiran({ uid, sesi }: { uid: string; sesi: Sesi }) {
   const hasil = usePresensiPraktikan(uid, sesi.id ? [sesi.id] : []);
   const presensi = sesi.id ? hasil.catatan.get(sesi.id) : undefined;
-  const lokasi = useLokasiPerangkat(sesi.status === "DIBUKA" && !presensi);
-  let pesanNonaktif: string | undefined;
-  if (!sesi.id) pesanNonaktif = "Identitas sesi tidak valid.";
-  else if (hasil.loading) pesanNonaktif = "Sedang memeriksa kehadiranmu...";
-  else if (hasil.error) pesanNonaktif = hasil.error;
-  else if (presensi) pesanNonaktif = "Presensi untuk sesi ini sudah tercatat.";
-  else if (sesi.status !== "DIBUKA") pesanNonaktif = sesi.status === "DITUTUP"
-    ? "Sesi sudah ditutup oleh asisten."
-    : "Presensi tersedia setelah sesi dibuka oleh asisten.";
-  else if (dariCache || hasil.dariCache) pesanNonaktif = "Menunggu konfirmasi data dari server. Periksa koneksi internetmu.";
-  else if (lokasi.status === "izin_ditolak") pesanNonaktif = "Izin lokasi diperlukan untuk presensi.";
-  else if (lokasi.status === "layanan_mati") pesanNonaktif = "Aktifkan layanan lokasi untuk presensi.";
-  else if (lokasi.status === "tidak_tersedia") pesanNonaktif = "Lokasi belum tersedia. Coba lagi.";
-  else if (lokasi.status === "memuat" || !lokasi.koordinat) pesanNonaktif = "Mencari lokasi perangkat...";
+  const sesiDibuka = sesi.status === "DIBUKA";
+  const pesanStatus = sesiDibuka
+    ? "Sesi sedang dibuka. Buka halaman presensi untuk memeriksa lokasi laboratorium dan mencatat kehadiran."
+    : sesi.status === "DITUTUP"
+      ? "Sesi sudah ditutup oleh asisten."
+      : "Presensi tersedia setelah sesi dibuka oleh asisten.";
 
   return (
     <View style={styles.feedback}>
       {hasil.error ? (
         <>
           <ErrorBanner message={hasil.error} />
-          <TouchableOpacity onPress={hasil.cobaLagi} style={styles.backButton} accessibilityRole="button">
-            <Text style={styles.backText}>Coba lagi</Text>
+          <TouchableOpacity onPress={hasil.cobaLagi} style={styles.secondaryButton} accessibilityRole="button">
+            <Text style={styles.secondaryText}>Coba lagi</Text>
           </TouchableOpacity>
         </>
       ) : hasil.loading ? (
@@ -169,26 +157,25 @@ function BagianPresensiPraktikan({ uid, sesi, dariCache }: { uid: string; sesi: 
       ) : (
         <>
           <Text accessibilityLiveRegion="polite" style={styles.message}>
-            {pesanNonaktif ?? "Presensi memerlukan koneksi internet dan hanya dapat dilakukan satu kali."}
+            {pesanStatus}
           </Text>
-          <TouchableOpacity
-            onPress={() => setFormTerbuka(true)} disabled={Boolean(pesanNonaktif)}
-            accessibilityRole="button" accessibilityState={{ disabled: Boolean(pesanNonaktif) }}
-            style={[styles.actionButton, Boolean(pesanNonaktif) && styles.disabled]}
-          >
-            <Text style={styles.actionText}>Presensi sekarang</Text>
-          </TouchableOpacity>
+          {sesi.id ? (
+            <Link
+              href={{ pathname: "/praktikan/presensi/[sessionId]", params: { sessionId: sesi.id } }}
+              asChild
+            >
+              <TouchableOpacity
+                accessibilityRole="link"
+                style={sesiDibuka ? styles.actionButton : styles.secondaryButton}
+              >
+                <Text style={sesiDibuka ? styles.actionText : styles.secondaryText}>
+                  {sesiDibuka ? "Buka halaman presensi" : "Lihat halaman presensi"}
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          ) : null}
         </>
       )}
-      <FormPresensi
-        sesi={sesi} visible={formTerbuka} pesanNonaktif={pesanNonaktif}
-        onClose={() => setFormTerbuka(false)}
-        onSubmit={async (catatan) => {
-          if (!sesi.id) throw new Error("Identitas sesi tidak valid.");
-          if (!lokasi.koordinat) throw new Error("Lokasi perangkat belum tersedia.");
-          await catatPresensiPraktikan({ uid, sesiId: sesi.id, catatan, koordinat: lokasi.koordinat });
-        }}
-      />
     </View>
   );
 }
@@ -197,7 +184,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: warna.latar },
   content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
   topBar: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 },
-  backCircle: { width: 44, height: 44, borderRadius: 999, backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, alignItems: "center", justifyContent: "center" },
+  backCircle: { width: 44, height: 44, borderRadius: radius.pil, backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, alignItems: "center", justifyContent: "center" },
   backButton: { alignSelf: "flex-start", minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, marginLeft: -8, marginBottom: 24, borderRadius: 12 },
   backArrow: { color: warna.utama, fontSize: 26, lineHeight: 28, marginTop: -2 },
   backText: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600" },
@@ -207,15 +194,14 @@ const styles = StyleSheet.create({
   title: { color: warna.teks, fontSize: 24, lineHeight: 32, fontWeight: "800" },
   subtitle: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, marginTop: 4 },
   infoWrap: { marginTop: 14 },
-  card: { backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, borderRadius: 24, padding: 20, marginBottom: 16 },
+  card: { backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, borderRadius: radius.kartu, padding: 20, marginBottom: 16 },
   sectionTitle: { color: warna.teks, fontSize: 18, lineHeight: 26, fontWeight: "800", marginBottom: 14 },
   message: { color: warna.teksRedup, fontSize: 14, lineHeight: 22 },
   cacheNotice: { color: warna.peringatanTeks, fontSize: 13, lineHeight: 21, marginBottom: 16 },
   feedback: { gap: 12 },
-  actionButton: { minHeight: 52, padding: 14, borderRadius: 999, backgroundColor: warna.utama, alignItems: "center", justifyContent: "center", marginTop: 4 },
+  actionButton: { minHeight: 52, padding: 14, borderRadius: radius.pil, backgroundColor: warna.utama, alignItems: "center", justifyContent: "center", marginTop: 4 },
   actionText: { color: warna.utamaTeks, fontSize: 15, fontWeight: "700" },
   linkGroup: { gap: 10, marginTop: 4 },
-  secondaryButton: { minHeight: 50, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.kartuKaca, alignItems: "center", justifyContent: "center" },
+  secondaryButton: { minHeight: 50, paddingHorizontal: 16, borderRadius: radius.pil, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.kartuKaca, alignItems: "center", justifyContent: "center" },
   secondaryText: { color: warna.utama, fontSize: 14, fontWeight: "700" },
-  disabled: { opacity: 0.5 },
 });

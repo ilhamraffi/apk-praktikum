@@ -21,6 +21,15 @@ export function KartuJadwalPraktikan({
     if (!id) return;
     router.navigate({ pathname: "/praktikan/[sesiId]", params: { sesiId: id } });
   };
+  const bukaPresensi = () => {
+    const id = sesi.id?.trim();
+    if (!id) return;
+    router.navigate({
+      pathname: "/praktikan/presensi/[sessionId]",
+      params: { sessionId: id },
+    });
+  };
+  const sesiDibuka = sesi.status === "DIBUKA";
 
   return (
     <TouchableOpacity
@@ -32,7 +41,7 @@ export function KartuJadwalPraktikan({
     >
       <View style={styles.topRow}>
         <Text style={styles.topLabel}>
-          {sesi.status === "DIBUKA" ? "Praktikum hari ini" : "Jadwal praktikum"}
+          {sesiDibuka ? "Praktikum hari ini" : "Jadwal praktikum"}
         </Text>
         <StatusSesi status={sesi.status} />
       </View>
@@ -43,13 +52,17 @@ export function KartuJadwalPraktikan({
       <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
       <TouchableOpacity
         accessibilityRole="button"
-        accessibilityLabel={`Buka presensi ${sesi.namaPraktikum}`}
+        accessibilityLabel={
+          sesiDibuka
+            ? `Buka presensi ${sesi.namaPraktikum}`
+            : `Lihat detail ${sesi.namaPraktikum}`
+        }
         activeOpacity={0.85}
-        onPress={bukaDetail}
+        onPress={sesiDibuka ? bukaPresensi : bukaDetail}
         style={styles.action}
       >
         <Text style={styles.actionText}>
-          {sesi.status === "DIBUKA" ? "Isi presensi" : "Lihat detail & presensi"}
+          {sesiDibuka ? "Isi presensi" : "Lihat detail sesi"}
         </Text>
       </TouchableOpacity>
     </TouchableOpacity>
