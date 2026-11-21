@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { loadSource } from "./helpers/load-source.mjs";
+
+const theme = loadSource("src/theme.ts");
 import { hookHarness } from "./helpers/hook-harness.mjs";
 
 const util = loadSource("src/utils/izinAsisten.ts");
@@ -35,6 +37,7 @@ function decisionHarness(save = async () => {}) {
   const hooks = hookHarness(); const calls = [];
   let props = { asistenUid: "asisten-a", pengajuan, dariCache: false, tertunda: false };
   const { KeputusanPengajuanIzin } = loadSource("src/components/asisten/izin/KeputusanPengajuanIzin.tsx", {
+    "../../../theme": theme,
     react: hooks.react, "react/jsx-runtime": runtime, "react-native": native,
     "../../../hooks/useIzinAsisten": { putuskanPengajuanIzin: (input) => { calls.push(input); return save(input); } },
     "../../../lib/errors": errors, "../../../utils/izinAsisten": util, "../../shared/StatusLayar": statusComponents,
@@ -134,6 +137,7 @@ test("guard tidak memasang anak/listener saat belum login, loading, UID kosong a
   ]) {
     let renders = 0;
     const { AksesIzinAsisten } = loadSource("src/components/asisten/izin/AksesIzinAsisten.tsx", {
+      "../../../theme": theme,
       "react/jsx-runtime": runtime, "react-native": native, "react-native-safe-area-context": { SafeAreaView: "SafeAreaView" },
       "expo-router": { Link: "Link", Redirect: "Redirect" }, "../../../context/AuthContext": { useAuth: () => auth },
       "../../shared/StatusLayar": statusComponents,
@@ -148,6 +152,7 @@ function screenHarness(kind, data = {}, params = { izinId: "izin-satu" }) {
   const hooks = hookHarness(); const calls = [];
   const hasil = { izin: [pengajuan], pengajuan, loading: false, error: null, dariCache: false, tertunda: false, cobaLagi: () => {}, ...data };
   const source = loadSource(`src/app/asisten/izin/${kind === "list" ? "index" : "[izinId]"}.tsx`, {
+    "../../../theme": theme,
     react: hooks.react, "react/jsx-runtime": runtime, "react-native": native,
     "react-native-safe-area-context": { SafeAreaView: "SafeAreaView" },
     "expo-router": { Link: "Link", useLocalSearchParams: () => params },
@@ -207,6 +212,7 @@ test("detail tidak memasang tindakan untuk loading/error/dihapus; metadata diter
 
 test("informasi AI kosong dan referensi profil/sesi hilang ditampilkan tanpa crash", () => {
   const source = loadSource("src/components/asisten/izin/InformasiPengajuanIzin.tsx", {
+    "../../../theme": theme,
     "react/jsx-runtime": runtime, "react-native": native, "../../../utils/izinAsisten": util,
     "../../../hooks/useReferensiIzinAsisten": { useReferensiIzinAsisten: () => ({ data: null, loading: false, error: null, cobaLagi: () => {} }) },
     "../../izin/HasilAnalisisIzin": { HasilAnalisisIzin: "HasilAnalisisIzin" },

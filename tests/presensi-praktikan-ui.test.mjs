@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadSource } from "./helpers/load-source.mjs";
 
+const theme = loadSource("src/theme.ts");
+
 const errors = loadSource("src/lib/errors.ts");
 const util = loadSource("src/utils/presensiPraktikan.ts");
 const session = { id: "satu", classId: "a", namaPraktikum: "Pemrograman", modul: "Modul 1", waktu: "Senin 08:00", ruangan: "Lab 1", status: "DIBUKA" };
@@ -57,6 +59,7 @@ function formHarness(onSubmit) {
     },
   };
   const { FormPresensi } = loadSource("src/components/praktikan/FormPresensi.tsx", {
+    "../../theme": theme,
     react,
     "react/jsx-runtime": { jsx, jsxs: jsx },
     "react-native": native,
@@ -140,6 +143,7 @@ function screenHarness(kind, { role = "PRAKTIKAN", user = { uid: "praktikan-a" }
   const jadwalState = { sesi: [session], kelas: [kelas], mapKelas: new Map([["a", kelas]]), loading: false, error: null, dariCache: false, cobaLagi: () => {}, ...jadwal };
   const presensiState = { catatan: new Map(), tertunda: new Set(), loading: false, error: null, dariCache: false, cobaLagi: () => {}, ...presensi };
   const source = loadSource(kind === "detail" ? "src/app/praktikan/[sesiId].tsx" : "src/app/praktikan/riwayat.tsx", {
+    "../../theme": theme,
     react: { useState: () => [false, () => {}] },
     "react/jsx-runtime": { jsx, jsxs: jsx },
     "react-native": native,

@@ -5,6 +5,7 @@ import { pesanError } from "../../../lib/errors";
 import type { PengajuanIzin } from "../../../types";
 import { isiIzinSama, type KeputusanIzin } from "../../../utils/izinAsisten";
 import { ErrorBanner } from "../../shared/StatusLayar";
+import { warna } from "../../../theme";
 
 interface Props {
   asistenUid: string;
@@ -73,7 +74,7 @@ export function KeputusanPengajuanIzin({ asistenUid, pengajuan, dariCache, tertu
           <View style={styles.actions}>
             <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: nonaktif, busy: mengirim }} disabled={nonaktif} onPress={simpan}
               style={[styles.button, pilihan.keputusan === "approved" ? styles.accept : styles.reject, nonaktif && styles.disabled]}>
-              {mengirim ? <ActivityIndicator color="#FFFFFF" /> : null}
+              {mengirim ? <ActivityIndicator color={warna.utamaTeks} /> : null}
               <Text style={styles.buttonText}>{mengirim ? "Menyimpan keputusan..." : pilihan.keputusan === "approved" ? "Ya, terima izin" : "Ya, tolak izin"}</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" disabled={mengirim || tersimpan} onPress={batal} style={[styles.button, styles.cancel, (mengirim || tersimpan) && styles.disabled]}>
@@ -96,17 +97,17 @@ export function KeputusanPengajuanIzin({ asistenUid, pengajuan, dariCache, tertu
 }
 
 const styles = StyleSheet.create({
-  panel: { padding: 20, borderRadius: 16, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF", gap: 14 },
+  panel: { padding: 20, borderRadius: 16, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.kartu, gap: 14 },
   section: { gap: 12 },
-  title: { fontSize: 17, lineHeight: 25, color: "#0F172A", fontWeight: "700" },
-  description: { fontSize: 14, lineHeight: 23, color: "#64748B" },
-  notice: { fontSize: 14, lineHeight: 23, color: "#92400E" },
+  title: { fontSize: 17, lineHeight: 25, color: warna.teks, fontWeight: "700" },
+  description: { fontSize: 14, lineHeight: 23, color: warna.teksRedup },
+  notice: { fontSize: 14, lineHeight: 23, color: warna.peringatanTeks },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   button: { minHeight: 48, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 8 },
-  accept: { backgroundColor: "#166534" },
-  reject: { backgroundColor: "#B91C1C" },
-  cancel: { backgroundColor: "#F1F5F9" },
+  accept: { backgroundColor: warna.suksesTeks },
+  reject: { backgroundColor: warna.error },
+  cancel: { backgroundColor: warna.permukaanLembut },
   disabled: { opacity: 0.5 },
-  buttonText: { color: "#FFFFFF", fontSize: 14, lineHeight: 22, fontWeight: "700" },
-  cancelText: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  buttonText: { color: warna.utamaTeks, fontSize: 14, lineHeight: 22, fontWeight: "700" },
+  cancelText: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, fontWeight: "600" },
 });

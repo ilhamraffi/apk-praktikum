@@ -2,6 +2,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { loadSource } from "./helpers/load-source.mjs";
+
+const theme = loadSource("src/theme.ts");
+const waktuSesi = loadSource("src/utils/waktuSesi.ts");
 import { hookHarness } from "./helpers/hook-harness.mjs";
 
 const errors = loadSource("src/lib/errors.ts");
@@ -36,6 +39,7 @@ function retryHarness(save = async () => {}) {
   const hooks = hookHarness(); const calls = [];
   let props = { uid: "p", pengajuan, dariCache: false };
   const { AnalisisUlangIzin } = loadSource("src/components/praktikan/AnalisisUlangIzin.tsx", {
+    "../../theme": theme,
     react: hooks.react, "react/jsx-runtime": runtime, "react-native": native,
     "../../hooks/useIzinPraktikan": { analisisUlangIzinPraktikan: (input) => { calls.push(input); return save(input); } },
     "../../lib/errors": errors,
@@ -45,6 +49,7 @@ function retryHarness(save = async () => {}) {
 
 test("hasil AI menampilkan kategori, ketidakpastian, dan keputusan manusia", () => {
   const { HasilAnalisisIzin } = loadSource("src/components/izin/HasilAnalisisIzin.tsx", {
+    "../../theme": theme,
     "react/jsx-runtime": runtime, "react-native": native, "../../utils/hasilAI": utils,
   });
   for (const [label, tampilan] of [["sakit", "Sakit"], ["keluarga", "Keluarga"], ["keperluan", "Keperluan"]]) {
@@ -106,6 +111,8 @@ test("penyelesaian analisis setelah logout/unmount tidak mengubah state akun bar
 
 function izinPage({ jadwal = {}, permissions = {} } = {}) {
   const defaultPage = loadSource("src/app/praktikan/izin.tsx", {
+    "../../utils/waktuSesi": waktuSesi,
+    "../../theme": theme,
     "react/jsx-runtime": runtime, "react-native": native,
     "react-native-safe-area-context": { SafeAreaView: "SafeAreaView" },
     "expo-router": { Link: "Link", useLocalSearchParams: () => ({}) },

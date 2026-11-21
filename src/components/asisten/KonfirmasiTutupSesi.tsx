@@ -1,5 +1,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { warna } from "../../theme";
 
 type KonfirmasiTutupSesiProps = {
   visible: boolean;
@@ -68,17 +69,17 @@ export function KonfirmasiTutupSesi({
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.5)" },
+  overlay: { flex: 1, backgroundColor: warna.overlay },
   container: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  dialog: { width: "100%", maxWidth: 440, backgroundColor: "#FFFFFF", borderRadius: 20, padding: 24 },
-  title: { color: "#0F172A", fontSize: 22, lineHeight: 30, fontWeight: "700" },
-  sessionName: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600", marginTop: 14 },
-  description: { color: "#64748B", fontSize: 15, lineHeight: 24, marginTop: 12 },
+  dialog: { width: "100%", maxWidth: 440, backgroundColor: warna.kartu, borderRadius: 20, padding: 24 },
+  title: { color: warna.teks, fontSize: 22, lineHeight: 30, fontWeight: "700" },
+  sessionName: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600", marginTop: 14 },
+  description: { color: warna.teksRedup, fontSize: 15, lineHeight: 24, marginTop: 12 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 24 },
   button: { flexGrow: 1, flexBasis: 140, minHeight: 48, borderRadius: 12, justifyContent: "center", alignItems: "center", padding: 12 },
-  cancel: { backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0" },
-  confirm: { backgroundColor: "#B91C1C" },
+  cancel: { backgroundColor: warna.permukaanLembut, borderWidth: 1, borderColor: warna.garis },
+  confirm: { backgroundColor: warna.error },
   pressed: { opacity: 0.75 },
-  cancelText: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "600" },
-  confirmText: { color: "#FFFFFF", fontSize: 14, lineHeight: 22, fontWeight: "700" },
+  cancelText: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  confirmText: { color: warna.utamaTeks, fontSize: 14, lineHeight: 22, fontWeight: "700" },
 });

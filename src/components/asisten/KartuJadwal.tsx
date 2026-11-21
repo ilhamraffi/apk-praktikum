@@ -1,9 +1,10 @@
 // src/components/asisten/KartuJadwal.tsx
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Sesi } from "../../types";
 import { InformasiSesi } from "./InformasiSesi";
 import { StatusSesi } from "./StatusSesi";
+import { radius, warna } from "../../theme";
 
 export function KartuJadwal({
   sesi,
@@ -12,64 +13,77 @@ export function KartuJadwal({
   sesi: Sesi;
   kelasLabel?: string;
 }) {
+  const router = useRouter();
   const nama = sesi.namaPraktikum?.trim() || "Praktikum";
   const modul = sesi.modul?.trim();
+  const bukaDetail = () => {
+    const id = sesi.id?.trim();
+    if (!id) return;
+    router.navigate({ pathname: "/asisten/[sesiId]", params: { sesiId: id } });
+  };
 
   return (
-    <Link
-      href={{ pathname: "/asisten/[sesiId]", params: { sesiId: sesi.id ?? "" } }}
-      asChild
+    <TouchableOpacity
+      accessibilityRole="link"
+      accessibilityLabel={`Lihat detail ${nama}, kelas ${kelasLabel ?? "-"}`}
+      accessibilityHint="Menampilkan informasi sesi praktikum."
+      activeOpacity={0.85}
+      onPress={bukaDetail}
+      style={styles.card}
     >
-      <TouchableOpacity
-        accessibilityRole="link"
-        accessibilityLabel={`Lihat detail ${nama}, kelas ${kelasLabel ?? "-"}`}
-        accessibilityHint="Menampilkan informasi sesi praktikum."
-        activeOpacity={0.85}
-        style={styles.card}
-      >
+      <View style={styles.topRow}>
+        <Text style={styles.topLabel}>Sesi praktikum</Text>
         <StatusSesi status={sesi.status} />
-        <View style={styles.heading}>
-          <Text style={styles.title}>{nama}</Text>
-          {modul ? <Text style={styles.module}>{modul}</Text> : null}
-        </View>
-        <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
-        <View style={styles.action}>
-          <Text style={styles.actionText}>Lihat detail sesi</Text>
-          <Text accessible={false} style={styles.arrow}>›</Text>
-        </View>
+      </View>
+      <View style={styles.heading}>
+        <Text style={styles.title}>{nama}</Text>
+        {modul ? <Text style={styles.module}>{modul}</Text> : null}
+      </View>
+      <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={`Kelola presensi ${nama}`}
+        activeOpacity={0.85}
+        onPress={bukaDetail}
+        style={styles.action}
+      >
+        <Text style={styles.actionText}>Kelola presensi</Text>
       </TouchableOpacity>
-    </Link>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: warna.kartuKaca,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 20,
+    borderColor: warna.garis,
+    borderRadius: radius.kartu,
     padding: 20,
-    gap: 20,
+    gap: 16,
   },
-  heading: { gap: 8 },
-  title: { color: "#0F172A", fontSize: 20, lineHeight: 28, fontWeight: "700" },
-  module: { color: "#64748B", fontSize: 14, lineHeight: 22 },
-  action: {
-    minHeight: 48,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+  topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
   },
+  topLabel: { color: warna.teksRedup, fontSize: 13, fontWeight: "500" },
+  heading: { gap: 6 },
+  title: { color: warna.teks, fontSize: 22, lineHeight: 28, fontWeight: "800" },
+  module: { color: warna.teksIsi, fontSize: 14, lineHeight: 22 },
+  action: {
+    minHeight: 50,
+    borderRadius: radius.pil,
+    backgroundColor: warna.utama,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
   actionText: {
-    flex: 1,
-    color: "#4338CA",
-    fontSize: 14,
+    color: warna.utamaTeks,
+    fontSize: 15,
     lineHeight: 22,
     fontWeight: "700",
   },
-  arrow: { color: "#4338CA", fontSize: 28, lineHeight: 32 },
 });

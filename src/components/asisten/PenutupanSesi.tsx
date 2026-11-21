@@ -7,6 +7,7 @@ import { tutupSesi } from "../../hooks/useSesi";
 import { pesanError } from "../../lib/errors";
 import type { Sesi } from "../../types";
 import { KonfirmasiTutupSesi } from "./KonfirmasiTutupSesi";
+import { warna } from "../../theme";
 
 export function PenutupanSesi({ sesi }: { sesi: Sesi }) {
   const { user, role } = useAuth();
@@ -103,16 +104,16 @@ export function PenutupanSesi({ sesi }: { sesi: Sesi }) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginTop: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 20 },
-  title: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700" },
-  description: { color: "#64748B", fontSize: 14, lineHeight: 23, marginTop: 10 },
-  button: { minHeight: 48, backgroundColor: "#B91C1C", borderRadius: 12, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 18 },
-  buttonText: { color: "#FFFFFF", fontSize: 15, lineHeight: 22, fontWeight: "700" },
-  disabled: { backgroundColor: "#94A3B8" },
+  card: { marginTop: 16, backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, borderRadius: 24, padding: 20 },
+  title: { color: warna.teks, fontSize: 18, lineHeight: 26, fontWeight: "800" },
+  description: { color: warna.teksRedup, fontSize: 14, lineHeight: 23, marginTop: 10 },
+  button: { minHeight: 52, backgroundColor: warna.kartu, borderWidth: 1, borderColor: warna.garis, borderRadius: 999, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 18 },
+  buttonText: { color: warna.utama, fontSize: 15, lineHeight: 22, fontWeight: "700" },
+  disabled: { backgroundColor: warna.placeholder },
   pressed: { opacity: 0.8 },
-  closed: { backgroundColor: "#F1F5F9", borderRadius: 12, padding: 14, marginTop: 14, gap: 8 },
-  closedText: { color: "#475569", fontSize: 14, lineHeight: 23 },
-  error: { color: "#B91C1C", fontSize: 14, lineHeight: 23, marginTop: 12 },
+  closed: { backgroundColor: warna.permukaanLembut, borderRadius: 16, padding: 14, marginTop: 14, gap: 8 },
+  closedText: { color: warna.teksIsi, fontSize: 14, lineHeight: 23 },
+  error: { color: warna.error, fontSize: 14, lineHeight: 23, marginTop: 12 },
   loginLink: { minHeight: 48, justifyContent: "center", alignSelf: "flex-start", paddingVertical: 10 },
-  linkText: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  linkText: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600" },
 });

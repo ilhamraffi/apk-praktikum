@@ -35,7 +35,7 @@ export function usePresensiSesi(sesiId?: string) {
         setState((prev) => ({
           ...prev,
           catatan: snap.docs.map(
-            (d) => ({ uid: d.id, ...d.data() }) as CatatanPresensi,
+            (d) => ({ ...d.data(), uid: d.id }) as CatatanPresensi,
           ),
           loaded: true,
           error: null,

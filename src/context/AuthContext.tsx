@@ -26,7 +26,7 @@ interface SignUpInput {
   nim: string;
   email: string;
   password: string;
-  
+  role?: Role;
 }
 
 interface AuthContextValue {
@@ -36,38 +36,45 @@ interface AuthContextValue {
   signUp: (input: SignUpInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  pilihPeran: (peranBaru: Role) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profil, setProfil] = useState<ProfilUser | null>(null);
+  const [peranAktif, setPeranAktif] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (authUser) => {
       if (!authUser) {
         setProfil(null);
+        setPeranAktif(null);
         setLoading(false);
         return;
       }
 
       try {
-  const snap = await getDoc(doc(db, "users", authUser.uid));
-  if (snap.exists()) {
-    setProfil({ uid: authUser.uid, ...snap.data() } as ProfilUser);
-  } else {
-    // Beri peringatan di terminal jika profil tidak ditemukan di database
-    console.error("PROFIL TIDAK DITEMUKAN untuk uid:", authUser.uid);
-    setProfil(null);
-  }
-} catch (error) {
-  // Beri peringatan jika akses membaca ditolak (masalah Rules)
-  console.error("GAGAL BACA PROFIL:", error);
-  setProfil(null);
-} finally {
-  setLoading(false);
-}
+        const snap = await getDoc(doc(db, "users", authUser.uid));
+        if (snap.exists()) {
+          const dataProfil = { ...snap.data(), uid: authUser.uid } as ProfilUser;
+          setProfil(dataProfil);
+          setPeranAktif(dataProfil.role ?? null);
+        } else {
+          // Beri peringatan di terminal jika profil tidak ditemukan di database
+          console.error("PROFIL TIDAK DITEMUKAN untuk uid:", authUser.uid);
+          setProfil(null);
+          setPeranAktif(null);
+        }
+      } catch (error) {
+        // Beri peringatan jika akses membaca ditolak (masalah Rules)
+        console.error("GAGAL BACA PROFIL:", error);
+        setProfil(null);
+        setPeranAktif(null);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return unsub;
@@ -76,41 +83,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user: profil,
-      role: profil?.role ?? null,
+      role: peranAktif ?? profil?.role ?? null,
       loading,
+      pilihPeran: (peranBaru: Role) => {
+        setPeranAktif(peranBaru);
+      },
       signUp: async (input) => {
-  const { nama, nim, email, password } = input;
-  
-  // 1. Buat akun di Authentication Firebase
-  const credential = await createUserWithEmailAndPassword(
-    auth,
-    email.trim(),
-    password,
-  );
-  
-  const profilBaru: ProfilUser = {
-    uid: credential.user.uid,
-    nama: nama.trim(),
-    nim: nim.trim(),
-    email: email.trim(),
-    role: "PRAKTIKAN",
-  };
+        const { nama, nim, email, password } = input;
 
-  try {
-    // 2. Coba simpan profil ke Firestore
-    await setDoc(doc(db, "users", credential.user.uid), profilBaru);
-    
-    // Set langsung agar tidak menunggu listener
-    setProfil(profilBaru);
-  } catch (error) {
-    // 3. JIKA GAGAL simpan ke Firestore, hapus akun Auth yang terlanjur dibuat!
-    if (credential.user) {
-      await deleteUser(credential.user);
-    }
-    // Lempar error ke UI agar pesan kegagalan muncul di layar Register
-    throw error;
-  }
-},
+        // 1. Buat akun di Authentication Firebase
+        const credential = await createUserWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password,
+        );
+
+        const peranTerpilih: Role = input.role === "ASISTEN" ? "ASISTEN" : "PRAKTIKAN";
+        const profilBaru: ProfilUser = {
+          uid: credential.user.uid,
+          nama: nama.trim(),
+          nim: nim.trim(),
+          email: email.trim(),
+          role: peranTerpilih,
+        };
+
+        try {
+          // 2. Coba simpan profil ke Firestore
+          await setDoc(doc(db, "users", credential.user.uid), profilBaru);
+
+          // Set langsung agar tidak menunggu listener
+          setProfil(profilBaru);
+          setPeranAktif(peranTerpilih);
+        } catch (error) {
+          // 3. JIKA GAGAL simpan ke Firestore, hapus akun Auth yang terlanjur dibuat!
+          if (credential.user) {
+            await deleteUser(credential.user);
+          }
+          // Lempar error ke UI agar pesan kegagalan muncul di layar Register
+          throw error;
+        }
+      },
       signIn: async (email, password) => {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       },
@@ -118,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await firebaseSignOut(auth);
       },
     }),
-    [profil, loading],
+    [profil, peranAktif, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

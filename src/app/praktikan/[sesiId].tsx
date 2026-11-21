@@ -13,6 +13,7 @@ import { catatPresensiPraktikan, usePresensiPraktikan } from "../../hooks/usePre
 import { FormPresensi } from "../../components/praktikan/FormPresensi";
 import { RingkasanPresensi } from "../../components/praktikan/RingkasanPresensi";
 import type { Sesi } from "../../types";
+import { warna } from "../../theme";
 
 export default function DetailSesiPraktikanScreen() {
   const { sesiId } = useLocalSearchParams<{ sesiId?: string | string[] }>();
@@ -22,13 +23,13 @@ export default function DetailSesiPraktikanScreen() {
     ? user?.uid
     : undefined;
   const { sesi: daftarSesi, mapKelas, loading, error, dariCache, cobaLagi } = useJadwalPraktikan(uid);
-  // /praktikan/index masih dipakai dashboard scaffold milik Rajib.
+  // /praktikan/index adalah beranda praktikan.
   // Pertahankan kompatibilitas tanpa mengubah file milik anggota lain.
   if (id === "index") return <Redirect href="/praktikan" />;
 
   if (loadingAuth) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <Loading />
       </SafeAreaView>
     );
@@ -36,7 +37,7 @@ export default function DetailSesiPraktikanScreen() {
 
   if (!user || role !== "PRAKTIKAN" || !user.uid) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <View style={styles.content}>
           <View style={styles.card}>
             <Text accessibilityRole="header" style={styles.title}>{!user ? "Belum masuk" : "Akses tidak tersedia"}</Text>
@@ -50,7 +51,7 @@ export default function DetailSesiPraktikanScreen() {
           </View>
           <Link href="/" replace asChild>
             <TouchableOpacity style={styles.backButton} accessibilityRole="link">
-              <Text style={styles.backText}>{user ? "Ke dashboard" : "Ke halaman masuk"}</Text>
+              <Text style={styles.backText}>{user ? "Kembali" : "Ke halaman masuk"}</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -64,19 +65,21 @@ export default function DetailSesiPraktikanScreen() {
   const kelasLabel = kelas ? `${kelas.nama} (${kelas.kode})` : undefined;
 
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Link href="/praktikan" replace asChild>
-          <TouchableOpacity style={styles.backButton} accessibilityRole="link">
-            <Text accessible={false} style={styles.backArrow}>‹</Text>
-            <Text style={styles.backText}>Kembali ke jadwal</Text>
-          </TouchableOpacity>
-        </Link>
+        <View style={styles.topBar}>
+          <Link href="/praktikan" replace asChild>
+            <TouchableOpacity style={styles.backCircle} accessibilityRole="link" accessibilityLabel="Kembali ke jadwal">
+              <Text accessible={false} style={styles.backArrow}>‹</Text>
+            </TouchableOpacity>
+          </Link>
+          <Text accessibilityRole="header" style={styles.topTitle}>Presensi praktikum</Text>
+        </View>
         {error ? (
           <View style={styles.feedback}>
             <ErrorBanner message={error} />
-            <TouchableOpacity onPress={cobaLagi} style={styles.backButton} accessibilityRole="button">
-              <Text style={styles.backText}>Coba lagi</Text>
+            <TouchableOpacity onPress={cobaLagi} style={styles.secondaryButton} accessibilityRole="button">
+              <Text style={styles.secondaryText}>Coba lagi</Text>
             </TouchableOpacity>
           </View>
         ) : loading ? (
@@ -88,30 +91,35 @@ export default function DetailSesiPraktikanScreen() {
                 Menampilkan data tersimpan di perangkat. Data terbaru akan dimuat saat terhubung ke server.
               </Text>
             ) : null}
-            <View style={styles.hero}>
-              <Text style={styles.eyebrow}>DETAIL SESI</Text>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.eyebrow}>
+                  {[sesi.modul, kelasLabel].filter(Boolean).join(" · ").toUpperCase()}
+                </Text>
+                <StatusSesi status={sesi.status} />
+              </View>
               <Text accessibilityRole="header" style={styles.title}>{sesi.namaPraktikum}</Text>
               <Text style={styles.subtitle}>{sesi.modul}</Text>
-              <View style={styles.status}><StatusSesi status={sesi.status} /></View>
+              <View style={styles.infoWrap}>
+                <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
+              </View>
             </View>
             <View style={styles.card}>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>Informasi praktikum</Text>
-              <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
-            </View>
-            <View style={styles.card}>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>Presensi</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>Status & kehadiran</Text>
               <BagianPresensiPraktikan key={`${uid}:${id}`} uid={user.uid} sesi={sesi} dariCache={dariCache} />
             </View>
-            <Link href={{ pathname: "/praktikan/izin", params: { sesiId: id } }} asChild>
-              <TouchableOpacity style={styles.backButton} accessibilityRole="link">
-                <Text style={styles.backText}>Ajukan izin untuk sesi ini</Text>
-              </TouchableOpacity>
-            </Link>
-            <Link href="/praktikan/riwayat" asChild>
-              <TouchableOpacity style={styles.backButton} accessibilityRole="link">
-                <Text style={styles.backText}>Lihat riwayat kehadiran</Text>
-              </TouchableOpacity>
-            </Link>
+            <View style={styles.linkGroup}>
+              <Link href={{ pathname: "/praktikan/izin", params: { sesiId: id } }} asChild>
+                <TouchableOpacity style={styles.secondaryButton} accessibilityRole="link">
+                  <Text style={styles.secondaryText}>Ajukan izin untuk sesi ini</Text>
+                </TouchableOpacity>
+              </Link>
+              <Link href="/praktikan/riwayat" asChild>
+                <TouchableOpacity style={styles.secondaryButton} accessibilityRole="link">
+                  <Text style={styles.secondaryText}>Lihat riwayat kehadiran</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           </>
         ) : (
           <View style={styles.card}>
@@ -179,22 +187,28 @@ function BagianPresensiPraktikan({ uid, sesi, dariCache }: { uid: string; sesi: 
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
+  topBar: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 },
+  backCircle: { width: 44, height: 44, borderRadius: 999, backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, alignItems: "center", justifyContent: "center" },
   backButton: { alignSelf: "flex-start", minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, marginLeft: -8, marginBottom: 24, borderRadius: 12 },
-  backArrow: { color: "#4338CA", fontSize: 28, lineHeight: 32 },
-  backText: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
-  hero: { marginBottom: 28 },
-  eyebrow: { color: "#4338CA", fontSize: 12, lineHeight: 20, fontWeight: "700", letterSpacing: 1 },
-  title: { color: "#0F172A", fontSize: 28, lineHeight: 38, fontWeight: "700", marginTop: 10 },
-  subtitle: { color: "#64748B", fontSize: 15, lineHeight: 24, marginTop: 10 },
-  status: { marginTop: 20 },
-  card: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 20, marginBottom: 16 },
-  sectionTitle: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700", marginBottom: 18 },
-  message: { color: "#64748B", fontSize: 14, lineHeight: 23 },
-  cacheNotice: { color: "#92400E", fontSize: 13, lineHeight: 21, marginBottom: 16 },
+  backArrow: { color: warna.utama, fontSize: 26, lineHeight: 28, marginTop: -2 },
+  backText: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  topTitle: { flex: 1, color: warna.teks, fontSize: 22, lineHeight: 28, fontWeight: "800" },
+  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 },
+  eyebrow: { flex: 1, color: warna.teksRedup, fontSize: 12, lineHeight: 18, fontWeight: "700", letterSpacing: 0.6 },
+  title: { color: warna.teks, fontSize: 24, lineHeight: 32, fontWeight: "800" },
+  subtitle: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, marginTop: 4 },
+  infoWrap: { marginTop: 14 },
+  card: { backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, borderRadius: 24, padding: 20, marginBottom: 16 },
+  sectionTitle: { color: warna.teks, fontSize: 18, lineHeight: 26, fontWeight: "800", marginBottom: 14 },
+  message: { color: warna.teksRedup, fontSize: 14, lineHeight: 22 },
+  cacheNotice: { color: warna.peringatanTeks, fontSize: 13, lineHeight: 21, marginBottom: 16 },
   feedback: { gap: 12 },
-  actionButton: { minHeight: 50, padding: 14, borderRadius: 12, backgroundColor: "#4338CA", alignItems: "center", justifyContent: "center" },
-  actionText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  actionButton: { minHeight: 52, padding: 14, borderRadius: 999, backgroundColor: warna.utama, alignItems: "center", justifyContent: "center", marginTop: 4 },
+  actionText: { color: warna.utamaTeks, fontSize: 15, fontWeight: "700" },
+  linkGroup: { gap: 10, marginTop: 4 },
+  secondaryButton: { minHeight: 50, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.kartuKaca, alignItems: "center", justifyContent: "center" },
+  secondaryText: { color: warna.utama, fontSize: 14, fontWeight: "700" },
   disabled: { opacity: 0.5 },
 });

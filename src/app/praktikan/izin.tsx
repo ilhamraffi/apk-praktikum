@@ -9,8 +9,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useDaftarIzinPraktikan } from "../../hooks/useIzinPraktikan";
 import { useJadwalPraktikan } from "../../hooks/useJadwalPraktikan";
 import { LABEL_STATUS_IZIN } from "../../utils/izinAsisten";
-import type { Sesi } from "../../types";
 import { teksWaktuSesi } from "../../utils/waktuSesi";
+import { warna } from "../../theme";
 
 
 export default function IzinPraktikanScreen() {
@@ -21,16 +21,16 @@ export default function IzinPraktikanScreen() {
   const jadwal = useJadwalPraktikan(uid);
   const izin = useDaftarIzinPraktikan(uid);
 
-  if (loadingAuth) return <SafeAreaView style={styles.page}><Loading /></SafeAreaView>;
+  if (loadingAuth) return <SafeAreaView style={styles.page} edges={["top"]}><Loading /></SafeAreaView>;
   if (!user || role !== "PRAKTIKAN" || !user.uid) {
-    return <SafeAreaView style={styles.page}><View style={styles.content}><Empty title="Akses tidak tersedia" description="Halaman izin hanya tersedia untuk Praktikan." /></View></SafeAreaView>;
+    return <SafeAreaView style={styles.page} edges={["top"]}><View style={styles.content}><Empty title="Akses tidak tersedia" description="Halaman izin hanya tersedia untuk Praktikan." /></View></SafeAreaView>;
   }
 
   const sesiTarget = targetId ? jadwal.sesi.find((item) => item.id === targetId) : undefined;
   const sudahMengajukan = targetId ? izin.izin.some((item) => item.sessionId === targetId) : false;
 
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <FlatList
         data={jadwal.sesi}
         keyExtractor={(item) => item.id ?? item.namaPraktikum}
@@ -86,23 +86,23 @@ export default function IzinPraktikanScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
   header: { gap: 12, marginBottom: 16 },
   back: { minHeight: 40, justifyContent: "center" },
-  link: { color: "#4338CA", fontWeight: "700" },
-  title: { color: "#0F172A", fontSize: 28, fontWeight: "700" },
-  subtitle: { color: "#64748B", lineHeight: 22 },
-  sectionTitle: { color: "#0F172A", fontSize: 18, fontWeight: "700", marginTop: 10 },
-  notice: { color: "#92400E", backgroundColor: "#FEF3C7", padding: 10, borderRadius: 8 },
-  card: { padding: 18, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", gap: 8 },
-  session: { color: "#0F172A", fontSize: 17, fontWeight: "700" },
-  reason: { color: "#475569", lineHeight: 21 },
-  status: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, fontWeight: "700" },
-  pending: { backgroundColor: "#FEF3C7", color: "#92400E" },
-  approved: { backgroundColor: "#DCFCE7", color: "#166534" },
-  rejected: { backgroundColor: "#FEE2E2", color: "#991B1B" },
+  link: { color: warna.utama, fontWeight: "700" },
+  title: { color: warna.teks, fontSize: 28, fontWeight: "800" },
+  subtitle: { color: warna.teksRedup, lineHeight: 22 },
+  sectionTitle: { color: warna.teks, fontSize: 18, fontWeight: "800", marginTop: 10 },
+  notice: { color: warna.peringatanTeks, backgroundColor: warna.peringatanLatar, padding: 12, borderRadius: 12 },
+  card: { padding: 20, borderRadius: 24, backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, gap: 10 },
+  session: { color: warna.teks, fontSize: 19, fontWeight: "800" },
+  reason: { color: warna.teksIsi, lineHeight: 21 },
+  status: { alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999, fontWeight: "700", fontSize: 12, overflow: "hidden" },
+  pending: { backgroundColor: warna.peringatanLatar, color: warna.peringatanTeks },
+  approved: { backgroundColor: warna.suksesLatar, color: warna.suksesTeks },
+  rejected: { backgroundColor: warna.errorLatar, color: warna.errorTeks },
   action: { minHeight: 44, justifyContent: "center" },
-  actionText: { color: "#4338CA", fontWeight: "700" },
-  separator: { height: 12 },
+  actionText: { color: warna.utama, fontWeight: "700" },
+  separator: { height: 14 },
 });
