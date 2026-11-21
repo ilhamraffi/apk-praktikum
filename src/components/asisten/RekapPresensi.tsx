@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { CatatanPresensi, SessionStatus } from "../../types";
 import { ErrorBanner, Loading } from "../shared/StatusLayar";
 import { formatWaktuPresensi, hitungRekapPresensi } from "./dataRekapPresensi";
+import { radius, warna } from "../../theme";
 
 const pesanKosong: Record<SessionStatus, string> = {
   BELUM_DIBUKA:
@@ -27,15 +28,23 @@ export function RekapPresensi({
   error,
 }: RekapPresensiProps) {
   const rekap = hitungRekapPresensi(catatan, totalPraktikan);
+  const alpa =
+    rekap.total !== null
+      ? Math.max(0, rekap.total - rekap.jumlahHadir - rekap.jumlahIzin)
+      : null;
 
   return (
     <View style={styles.card}>
-      <Text accessibilityRole="header" style={styles.title}>
-        Rekap Kehadiran
-      </Text>
-      <Text style={styles.total}>
-        Total praktikan terdaftar: {rekap.total ?? "belum tersedia"}
-      </Text>
+      <View style={styles.headerRow}>
+        <Text accessibilityRole="header" style={styles.title}>
+          Rekap Kehadiran
+        </Text>
+        <Text style={styles.ratioBadge}>
+          {rekap.total === null
+            ? `${rekap.jumlahHadir} hadir`
+            : `${rekap.jumlahHadir} / ${rekap.total}`}
+        </Text>
+      </View>
 
       {loading ? (
         <Loading label="Memuat presensi..." />
@@ -44,41 +53,41 @@ export function RekapPresensi({
       ) : (
         <>
           <View accessibilityLiveRegion="polite" style={styles.summary}>
-            <Text style={styles.ratio}>
-              {rekap.total === null
-                ? `${rekap.jumlahHadir} praktikan hadir`
-                : `${rekap.jumlahHadir} dari ${rekap.total} praktikan hadir`}
-            </Text>
             {rekap.persentase !== null ? (
-              <>
-                <Text style={styles.percentage}>
-                  {rekap.persentase}% Kehadiran
-                </Text>
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel="Persentase kehadiran"
+                accessibilityValue={{
+                  min: 0,
+                  max: 100,
+                  now: Math.min(rekap.persentase, 100),
+                  text: `${rekap.persentase}% kehadiran`,
+                }}
+                style={styles.track}
+              >
                 <View
-                  accessibilityRole="progressbar"
-                  accessibilityLabel="Persentase kehadiran"
-                  accessibilityValue={{
-                    min: 0,
-                    max: 100,
-                    now: Math.min(rekap.persentase, 100),
-                    text: `${rekap.persentase}% kehadiran`,
-                  }}
-                  style={styles.track}
-                >
-                  <View
-                    style={[
-                      styles.progress,
-                      { width: `${Math.min(rekap.persentase, 100)}%` },
-                    ]}
-                  />
-                </View>
-              </>
+                  style={[
+                    styles.progress,
+                    { width: `${Math.min(rekap.persentase, 100)}%` },
+                  ]}
+                />
+              </View>
             ) : null}
-            {rekap.jumlahIzin > 0 ? (
-              <Text style={styles.secondary}>
-                {rekap.jumlahIzin} praktikan izin, tidak dihitung sebagai hadir.
-              </Text>
-            ) : null}
+
+            <View style={styles.statGrid}>
+              <View style={styles.statBox}>
+                <Text style={styles.statNumber}>{rekap.jumlahHadir}</Text>
+                <Text style={styles.statLabel}>Hadir</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statNumber}>{rekap.jumlahIzin}</Text>
+                <Text style={styles.statLabel}>Izin</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statNumber}>{alpa ?? "-"}</Text>
+                <Text style={styles.statLabel}>Belum hadir</Text>
+              </View>
+            </View>
           </View>
 
           {rekap.jumlahDiabaikan > 0 ? (
@@ -99,29 +108,30 @@ export function RekapPresensi({
             </Text>
           ) : (
             <View style={styles.list}>
-              {rekap.catatan.map(({ key, presensi }) => {
+              {rekap.catatan.map(({ key, presensi }, idx) => {
                 const hadir = presensi.statusKehadiran === "Hadir";
                 return (
-                  <View key={key} style={styles.student}>
-                    <Text style={styles.name}>
-                      {presensi.nama?.trim() || "Nama tidak tersedia"}
-                    </Text>
-                    <Text style={styles.secondary}>
-                      {presensi.nim?.trim() || "NIM belum tersedia"}
-                    </Text>
-                    <View style={styles.recordMeta}>
-                      <Text
-                        style={[
-                          styles.attendanceBadge,
-                          hadir ? styles.present : styles.excused,
-                        ]}
-                      >
-                        {presensi.statusKehadiran}
+                  <View
+                    key={key}
+                    style={[styles.student, idx === 0 && styles.studentFirst]}
+                  >
+                    <View style={styles.studentInfo}>
+                      <Text style={styles.name}>
+                        {presensi.nama?.trim() || "Nama tidak tersedia"}
                       </Text>
-                      <Text style={styles.time}>
-                        Waktu presensi: {formatWaktuPresensi(presensi.waktu)}
+                      <Text style={styles.secondary}>
+                        {presensi.nim?.trim() || "NIM belum tersedia"} ·{" "}
+                        {formatWaktuPresensi(presensi.waktu)}
                       </Text>
                     </View>
+                    <Text
+                      style={[
+                        styles.attendanceBadge,
+                        hadir ? styles.present : styles.excused,
+                      ]}
+                    >
+                      {presensi.statusKehadiran}
+                    </Text>
                   </View>
                 );
               })}
@@ -136,34 +146,70 @@ export function RekapPresensi({
 const styles = StyleSheet.create({
   card: {
     marginTop: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: warna.kartuKaca,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 20,
+    borderColor: warna.garis,
+    borderRadius: radius.kartu,
     padding: 20,
   },
-  title: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700" },
-  total: { color: "#64748B", fontSize: 13, lineHeight: 22, marginTop: 6 },
-  summary: { marginTop: 20, gap: 8 },
-  ratio: { color: "#0F172A", fontSize: 20, lineHeight: 28, fontWeight: "700" },
-  percentage: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
-  track: { height: 6, backgroundColor: "#E0E7FF", borderRadius: 3, overflow: "hidden" },
-  progress: { height: 6, backgroundColor: "#6366F1", borderRadius: 3 },
-  secondary: { color: "#64748B", fontSize: 13, lineHeight: 22 },
-  warning: { color: "#92400E", fontSize: 13, lineHeight: 22, marginTop: 14 },
-  empty: { color: "#64748B", fontSize: 14, lineHeight: 23, marginTop: 20 },
-  list: { marginTop: 12 },
-  student: {
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    paddingTop: 16,
-    marginTop: 16,
-    gap: 4,
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
   },
-  name: { color: "#0F172A", fontSize: 15, lineHeight: 24, fontWeight: "600" },
-  recordMeta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 6 },
-  attendanceBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, fontSize: 12, lineHeight: 18, fontWeight: "600" },
-  present: { color: "#166534", backgroundColor: "#DCFCE7" },
-  excused: { color: "#92400E", backgroundColor: "#FEF3C7" },
-  time: { color: "#475569", fontSize: 13, lineHeight: 22, flexShrink: 1 },
+  title: { color: warna.teks, fontSize: 18, lineHeight: 26, fontWeight: "800" },
+  ratioBadge: { color: warna.teks, fontSize: 18, fontWeight: "800" },
+  summary: { marginTop: 14, gap: 14 },
+  track: {
+    height: 8,
+    backgroundColor: warna.permukaan,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  progress: { height: 8, backgroundColor: warna.utama, borderRadius: 4 },
+  statGrid: { flexDirection: "row", gap: 10 },
+  statBox: {
+    flex: 1,
+    backgroundColor: warna.permukaanLembut,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 2,
+  },
+  statNumber: { color: warna.teks, fontSize: 22, fontWeight: "800" },
+  statLabel: { color: warna.teksRedup, fontSize: 12 },
+  secondary: { color: warna.teksRedup, fontSize: 13, lineHeight: 20 },
+  warning: { color: warna.peringatanTeks, fontSize: 13, lineHeight: 22, marginTop: 14 },
+  empty: { color: warna.teksRedup, fontSize: 14, lineHeight: 23, marginTop: 20 },
+  list: { marginTop: 16 },
+  student: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: warna.garis,
+    paddingTop: 14,
+    marginTop: 14,
+  },
+  studentFirst: {
+    borderTopWidth: 0,
+    paddingTop: 4,
+    marginTop: 0,
+  },
+  studentInfo: { flex: 1, gap: 2 },
+  name: { color: warna.teks, fontSize: 16, lineHeight: 22, fontWeight: "700" },
+  attendanceBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: radius.pil,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "700",
+    overflow: "hidden",
+  },
+  present: { color: warna.suksesTeks, backgroundColor: warna.suksesLatar },
+  excused: { color: warna.peringatanTeks, backgroundColor: warna.peringatanLatar },
 });

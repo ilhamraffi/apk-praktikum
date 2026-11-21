@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "rea
 import { analisisUlangIzinPraktikan } from "../../hooks/useIzinPraktikan";
 import { pesanError } from "../../lib/errors";
 import type { PengajuanIzin } from "../../types";
+import { warna } from "../../theme";
 
 export function AnalisisUlangIzin({ uid, pengajuan, dariCache }: { uid: string; pengajuan: PengajuanIzin; dariCache: boolean }) {
   const [memproses, setMemproses] = useState(false);
@@ -34,7 +35,7 @@ export function AnalisisUlangIzin({ uid, pengajuan, dariCache }: { uid: string; 
   return (
     <View style={styles.section}>
       <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !boleh || memproses, busy: memproses }} disabled={!boleh || memproses} onPress={analisis} style={[styles.button, (!boleh || memproses) && styles.disabled]}>
-        {memproses ? <ActivityIndicator color="#4338CA" /> : null}
+        {memproses ? <ActivityIndicator color={warna.utama} /> : null}
         <Text style={styles.buttonText}>{memproses ? "Menganalisis..." : "Analisis ulang alasan"}</Text>
       </TouchableOpacity>
       {dariCache ? <Text style={styles.description}>Hubungkan ke server untuk menyimpan hasil analisis.</Text> : null}
@@ -47,8 +48,8 @@ export function AnalisisUlangIzin({ uid, pengajuan, dariCache }: { uid: string; 
 const styles = StyleSheet.create({
   section: { gap: 8 },
   button: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", paddingVertical: 10 },
-  buttonText: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  buttonText: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600" },
   disabled: { opacity: 0.5 },
-  description: { color: "#64748B", fontSize: 13, lineHeight: 21 },
-  error: { color: "#B91C1C", fontSize: 13, lineHeight: 21 },
+  description: { color: warna.teksRedup, fontSize: 13, lineHeight: 21 },
+  error: { color: warna.error, fontSize: 13, lineHeight: 21 },
 });

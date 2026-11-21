@@ -27,6 +27,7 @@ import {
 } from "../../hooks/useKelas";
 import { useDaftarPraktikan } from "../../hooks/usePeserta";
 import type { Kelas } from "../../types";
+import { warna } from "../../theme";
 
 export default function KelolaKelasScreen() {
   const { loading: loadingAuth, boleh } = useWajibAsisten();
@@ -41,14 +42,14 @@ export default function KelolaKelasScreen() {
 
   if (loadingAuth) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <Loading />
       </SafeAreaView>
     );
   }
   if (!boleh) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <View style={styles.denied}>
           <Text style={styles.deniedTitle}>Akses ditolak</Text>
           <Text style={styles.deniedText}>
@@ -76,7 +77,7 @@ export default function KelolaKelasScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <FlatList
         data={kelas}
         keyExtractor={(item) => item.id ?? ""}
@@ -197,7 +198,7 @@ export default function KelolaKelasScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: {
     flexGrow: 1,
     width: "100%",
@@ -210,37 +211,37 @@ const styles = StyleSheet.create({
   header: { marginBottom: 24 },
   brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   backLink: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, marginLeft: -8 },
-  backArrow: { color: "#4338CA", fontSize: 28, lineHeight: 32 },
-  backText: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  backArrow: { color: warna.utama, fontSize: 28, lineHeight: 32 },
+  backText: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600" },
   headingRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 12, marginBottom: 10 },
-  title: { color: "#0F172A", fontSize: 28, lineHeight: 36, fontWeight: "700" },
-  countBadge: { backgroundColor: "#E0E7FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
-  countText: { color: "#3730A3", fontSize: 12, lineHeight: 18, fontWeight: "600" },
-  subtitle: { color: "#64748B", fontSize: 15, lineHeight: 24 },
-  primaryBtn: { minHeight: 48, paddingHorizontal: 18, borderRadius: 12, backgroundColor: "#4338CA", alignItems: "center", justifyContent: "center", marginTop: 16, alignSelf: "flex-start" },
-  primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  title: { color: warna.teks, fontSize: 28, lineHeight: 36, fontWeight: "800" },
+  countBadge: { backgroundColor: warna.permukaan, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  countText: { color: warna.utama, fontSize: 12, lineHeight: 18, fontWeight: "700" },
+  subtitle: { color: warna.teksRedup, fontSize: 15, lineHeight: 24 },
+  primaryBtn: { minHeight: 48, paddingHorizontal: 20, borderRadius: 999, backgroundColor: warna.utama, alignItems: "center", justifyContent: "center", marginTop: 16, alignSelf: "flex-start" },
+  primaryText: { color: warna.utamaTeks, fontSize: 14, fontWeight: "700" },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: warna.kartuKaca,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 20,
+    borderColor: warna.garis,
+    borderRadius: 24,
     padding: 20,
     gap: 16,
   },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   cardInfo: { flex: 1, gap: 4 },
-  cardTitle: { color: "#0F172A", fontSize: 18, lineHeight: 26, fontWeight: "700" },
-  cardSub: { color: "#64748B", fontSize: 14, lineHeight: 22 },
-  manageBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: "#E0E7FF" },
-  manageText: { color: "#3730A3", fontSize: 13, fontWeight: "700" },
+  cardTitle: { color: warna.teks, fontSize: 18, lineHeight: 26, fontWeight: "800" },
+  cardSub: { color: warna.teksRedup, fontSize: 14, lineHeight: 22 },
+  manageBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: warna.permukaan },
+  manageText: { color: warna.utama, fontSize: 13, fontWeight: "700" },
   cardActions: { flexDirection: "row", gap: 12 },
-  editBtn: { flex: 1, minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center" },
-  editText: { color: "#334155", fontSize: 14, fontWeight: "600" },
-  deleteBtn: { flex: 1, minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: "#FECACA", backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" },
-  deleteText: { color: "#B91C1C", fontSize: 14, fontWeight: "700" },
+  editBtn: { flex: 1, minHeight: 44, borderRadius: 999, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.kartu, alignItems: "center", justifyContent: "center" },
+  editText: { color: warna.teksIsi, fontSize: 14, fontWeight: "700" },
+  deleteBtn: { flex: 1, minHeight: 44, borderRadius: 999, borderWidth: 1, borderColor: warna.errorGaris, backgroundColor: warna.errorLatar, alignItems: "center", justifyContent: "center" },
+  deleteText: { color: warna.error, fontSize: 14, fontWeight: "700" },
   denied: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
-  deniedTitle: { color: "#0F172A", fontSize: 22, fontWeight: "700" },
-  deniedText: { color: "#64748B", fontSize: 15, lineHeight: 24, textAlign: "center" },
-  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#4338CA" },
-  deniedBtnText: { color: "#FFFFFF", fontWeight: "700" },
+  deniedTitle: { color: warna.teks, fontSize: 22, fontWeight: "700" },
+  deniedText: { color: warna.teksRedup, fontSize: 15, lineHeight: 24, textAlign: "center" },
+  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: warna.utama },
+  deniedBtnText: { color: warna.utamaTeks, fontWeight: "700" },
 });

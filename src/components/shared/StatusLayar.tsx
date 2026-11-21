@@ -1,11 +1,12 @@
 // src/components/shared/StatusLayar.tsx
 // Komponen status bersama: Loading, Empty, ErrorBanner (scaffold PM).
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { warna } from "../../theme";
 
 export function Loading({ label = "Memuat data..." }: { label?: string }) {
   return (
     <View style={styles.center}>
-      <ActivityIndicator size="large" color="#4338CA" />
+      <ActivityIndicator size="large" color={warna.utama} />
       <Text style={styles.text}>{label}</Text>
     </View>
   );
@@ -45,22 +46,22 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: warna.kartu,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: warna.garis,
     borderRadius: 20,
     padding: 24,
     gap: 10,
   },
-  title: { color: "#0F172A", fontSize: 18, lineHeight: 26, fontWeight: "700" },
-  text: { color: "#64748B", fontSize: 15, lineHeight: 24 },
+  title: { color: warna.teks, fontSize: 18, lineHeight: 26, fontWeight: "700" },
+  text: { color: warna.teksRedup, fontSize: 15, lineHeight: 24 },
   errorCard: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: warna.errorLatar,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: warna.errorGaris,
     borderRadius: 16,
     padding: 16,
     gap: 6,
   },
-  errorTitle: { color: "#B91C1C", fontSize: 15, lineHeight: 22, fontWeight: "700" },
+  errorTitle: { color: warna.error, fontSize: 15, lineHeight: 22, fontWeight: "700" },
 });

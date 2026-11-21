@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Kelas, ProfilUser } from "../../types";
+import { warna } from "../../theme";
 
 type KelolaPesertaProps = {
   visible: boolean;
@@ -32,8 +33,9 @@ export function KelolaPeserta({
   const [busyUid, setBusyUid] = useState<string | null>(null);
 
   const setUid = kelas.pesertaUids ?? [];
-  const peserta = daftarPraktikan.filter((u) => u.uid && setUid.includes(u.uid));
-  const tersedia = daftarPraktikan.filter((u) => u.uid && !setUid.includes(u.uid));
+  const hanyaPraktikan = daftarPraktikan.filter((u) => u.role === "PRAKTIKAN");
+  const peserta = hanyaPraktikan.filter((u) => u.uid && setUid.includes(u.uid));
+  const tersedia = hanyaPraktikan.filter((u) => u.uid && !setUid.includes(u.uid));
 
   const aksi = async (uid: string, fn: () => Promise<void>) => {
     setBusyUid(uid);
@@ -119,21 +121,21 @@ export function KelolaPeserta({
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, 0.45)" },
+  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: warna.overlay },
   sheet: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: warna.kartu,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 32,
     maxHeight: "85%",
   },
-  title: { color: "#0F172A", fontSize: 22, lineHeight: 30, fontWeight: "700" },
-  subtitle: { color: "#64748B", fontSize: 14, lineHeight: 22, marginTop: 6 },
+  title: { color: warna.teks, fontSize: 22, lineHeight: 30, fontWeight: "700" },
+  subtitle: { color: warna.teksRedup, fontSize: 14, lineHeight: 22, marginTop: 6 },
   scroll: { marginTop: 16 },
   scrollContent: { paddingBottom: 8 },
-  section: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "700", marginBottom: 10, marginTop: 6 },
-  empty: { color: "#64748B", fontSize: 14, lineHeight: 22, marginBottom: 12 },
+  section: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, fontWeight: "700", marginBottom: 10, marginTop: 6 },
+  empty: { color: warna.teksRedup, fontSize: 14, lineHeight: 22, marginBottom: 12 },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -141,35 +143,35 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: warna.permukaanLembut,
   },
   rowInfo: { flex: 1, gap: 2 },
-  rowName: { color: "#0F172A", fontSize: 15, lineHeight: 22, fontWeight: "600" },
-  rowNim: { color: "#64748B", fontSize: 13, lineHeight: 20 },
+  rowName: { color: warna.teks, fontSize: 15, lineHeight: 22, fontWeight: "600" },
+  rowNim: { color: warna.teksRedup, fontSize: 13, lineHeight: 20 },
   addBtn: {
-    backgroundColor: "#4338CA",
+    backgroundColor: warna.utama,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  addText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  addText: { color: warna.utamaTeks, fontSize: 13, fontWeight: "700" },
   removeBtn: {
     borderWidth: 1,
-    borderColor: "#FECACA",
-    backgroundColor: "#FEF2F2",
+    borderColor: warna.errorGaris,
+    backgroundColor: warna.errorLatar,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  removeText: { color: "#B91C1C", fontSize: 13, fontWeight: "700" },
+  removeText: { color: warna.error, fontSize: 13, fontWeight: "700" },
   close: {
     minHeight: 50,
     borderRadius: 12,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: warna.permukaanLembut,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
   },
-  closeText: { color: "#334155", fontSize: 15, fontWeight: "700" },
+  closeText: { color: warna.teksIsi, fontSize: 15, fontWeight: "700" },
   pressed: { opacity: 0.8 },
 });

@@ -8,6 +8,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -16,9 +17,9 @@ import {
   where,
   writeBatch,
 } from "@react-native-firebase/firestore";
-import { db } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
-import type { Kelas } from "../types";
+import type { Kelas, ProfilUser } from "../types";
 
 /** Daftar kelas real-time. */
 export function useDaftarKelas() {
@@ -32,7 +33,7 @@ export function useDaftarKelas() {
       q,
       (snap) => {
         setKelas(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Kelas),
+          snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Kelas),
         );
         setError(null);
         setLoading(false);
@@ -108,6 +109,14 @@ export async function tambahPeserta(
   kelasId: string,
   uid: string,
 ): Promise<void> {
+  if (!uid || auth.currentUser?.uid === uid) {
+    throw new Error("Asisten tidak dapat masuk atau menjadi peserta di kelas yang dikelolanya.");
+  }
+  const userSnap = await getDoc(doc(db, "users", uid));
+  const data = userSnap.data() as ProfilUser | undefined;
+  if (!userSnap.exists() || data?.role === "ASISTEN") {
+    throw new Error("Akun asisten tidak dapat ditambahkan sebagai peserta kelas/sesi.");
+  }
   await updateDoc(doc(db, "classes", kelasId), {
     pesertaUids: arrayUnion(uid),
   });

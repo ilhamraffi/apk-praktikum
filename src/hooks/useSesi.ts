@@ -2,7 +2,6 @@
 // Sesi/jadwal (CRUD) + buka/tutup sesi — milik Ilham (SRS-02, 03, 04).
 import { useEffect, useState } from "react";
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -33,7 +32,7 @@ export function useDaftarSesi(kelasId?: string) {
       (snap) => {
         setSesi(
           snap.docs
-            .map((d) => ({ id: d.id, ...d.data() }) as Sesi)
+            .map((d) => ({ ...d.data(), id: d.id }) as Sesi)
             .sort(urutkanSesi),
         );
         setError(null);
@@ -80,7 +79,7 @@ export function useSesiDetail(sesiId?: string) {
       (snap) =>
         setState((prev) => ({
           ...prev,
-          sesi: snap.exists() ? ({ id: snap.id, ...snap.data() } as Sesi) : null,
+          sesi: snap.exists() ? ({ ...snap.data(), id: snap.id } as Sesi) : null,
           loaded: true,
           error: null,
         })),
@@ -91,13 +90,13 @@ export function useSesiDetail(sesiId?: string) {
 
   useEffect(() => {
     const classId = state.sesi?.classId;
-    if (!classId) return;
+    if (!classId || classId.includes("/")) return;
     return onSnapshot(
       doc(db, "classes", classId),
       (snap) =>
         setState((prev) => ({
           ...prev,
-          kelas: snap.exists() ? ({ id: snap.id, ...snap.data() } as Kelas) : null,
+          kelas: snap.exists() ? ({ ...snap.data(), id: snap.id } as Kelas) : null,
         })),
       () => setState((prev) => ({ ...prev, kelas: null })),
     );

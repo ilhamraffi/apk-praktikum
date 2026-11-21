@@ -3,6 +3,7 @@ import { useReferensiIzinAsisten } from "../../../hooks/useReferensiIzinAsisten"
 import type { PengajuanIzin, StatusIzin } from "../../../types";
 import { LABEL_STATUS_IZIN, teksIzin } from "../../../utils/izinAsisten";
 import { HasilAnalisisIzin } from "../../izin/HasilAnalisisIzin";
+import { warna } from "../../../theme";
 
 export function StatusPengajuanIzin({ status }: { status: StatusIzin }) {
   return <View style={[styles.badge, styles[status]]}><Text style={styles.badgeText}>{LABEL_STATUS_IZIN[status]}</Text></View>;
@@ -44,16 +45,16 @@ export function AlasanPengajuanIzin({ pengajuan, ringkas = false }: { pengajuan:
 
 const styles = StyleSheet.create({
   section: { gap: 8 },
-  title: { color: "#0F172A", fontSize: 19, lineHeight: 28, fontWeight: "700" },
-  heading: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "700" },
-  reason: { color: "#334155", fontSize: 15, lineHeight: 25 },
-  muted: { color: "#64748B", fontSize: 13, lineHeight: 21 },
+  title: { color: warna.teks, fontSize: 19, lineHeight: 28, fontWeight: "700" },
+  heading: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, fontWeight: "700" },
+  reason: { color: warna.teksIsi, fontSize: 15, lineHeight: 25 },
+  muted: { color: warna.teksRedup, fontSize: 13, lineHeight: 21 },
   badge: { alignSelf: "flex-start", paddingVertical: 5, paddingHorizontal: 12, borderRadius: 12 },
-  badgeText: { color: "#0F172A", fontSize: 13, lineHeight: 20, fontWeight: "600" },
-  pending: { backgroundColor: "#FEF3C7" },
-  approved: { backgroundColor: "#DCFCE7" },
-  rejected: { backgroundColor: "#FEE2E2" },
-  warning: { color: "#92400E", fontSize: 13, lineHeight: 21 },
+  badgeText: { color: warna.teks, fontSize: 13, lineHeight: 20, fontWeight: "600" },
+  pending: { backgroundColor: warna.peringatanLatar },
+  approved: { backgroundColor: warna.suksesLatar },
+  rejected: { backgroundColor: warna.errorLatar },
+  warning: { color: warna.peringatanTeks, fontSize: 13, lineHeight: 21 },
   retry: { minHeight: 48, justifyContent: "center", alignSelf: "flex-start" },
-  link: { color: "#4338CA", fontSize: 14, fontWeight: "600" },
+  link: { color: warna.utama, fontSize: 14, fontWeight: "600" },
 });

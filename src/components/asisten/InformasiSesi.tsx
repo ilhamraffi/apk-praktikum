@@ -2,6 +2,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { Sesi } from "../../types";
 import { teksWaktuSesi } from "../../utils/waktuSesi";
+import { warna } from "../../theme";
 
 type InformasiSesiProps = {
   sesi: Pick<Sesi, "mulai" | "selesai" | "waktu" | "ruangan">;
@@ -9,10 +10,12 @@ type InformasiSesiProps = {
 };
 
 export function InformasiSesi({ sesi, kelasLabel }: InformasiSesiProps) {
+  const lokasi = [sesi.ruangan?.trim(), kelasLabel?.trim()]
+    .filter(Boolean)
+    .join(" · ");
   const informasi = [
-    { label: "Kelas", nilai: kelasLabel ?? "" },
-    { label: "Ruangan", nilai: sesi.ruangan },
     { label: "Waktu", nilai: teksWaktuSesi(sesi) },
+    { label: "Lokasi", nilai: lokasi || sesi.ruangan },
   ];
 
   return (
@@ -30,14 +33,25 @@ export function InformasiSesi({ sesi, kelasLabel }: InformasiSesiProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 14 },
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  label: { width: 68, color: "#64748B", fontSize: 14, lineHeight: 22 },
+  container: {
+    gap: 12,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: warna.garis,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  label: { color: warna.teksRedup, fontSize: 14, lineHeight: 20 },
   value: {
     flex: 1,
-    color: "#0F172A",
+    color: warna.teks,
     fontSize: 14,
-    lineHeight: 22,
-    fontWeight: "500",
+    lineHeight: 20,
+    fontWeight: "700",
+    textAlign: "right",
   },
 });
