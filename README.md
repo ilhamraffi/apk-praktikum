@@ -26,7 +26,7 @@ npm install
 3. Buka aplikasi **my-app** di HP, scan QR dari terminal, atau ketik `http://<IP-laptop>:8081`.
 4. Jika HP tidak bisa menjangkau laptop (Wi-Fi kampus sering memblokir antar perangkat): pakai `npx expo start --dev-client --tunnel`, atau kabel USB dengan `adb reverse tcp:8081 tcp:8081` lalu isi `http://localhost:8081`.
 
-Project Manager (Rebuild Dev jika ada paket native baru atau perubahan `app.json`) :
+Project Manager (Rebuild Dev Jika ada paket native baru atau perubahan `app.json`) :
 ```bash
 # Build development (hanya PM / anggota yang diberi akses team Expo)
 eas build --profile development --platform android
@@ -218,15 +218,18 @@ Memenuhi acceptance criteria • tiga alur demo berjalan di perangkat nyata • 
 ## 13. Catatan teknis & keputusan terbuka
 
 - **Perubahan dari Sprint 2:** presensi dipindah ke halaman sendiri, terpisah dari detail sesi; kehadiran hanya ditulis lewat jalur validasi lokasi; `ruangan` teks digantikan rujukan `labId`; Rules presensi diperketat.
-- **Validasi lokasi di sisi penyimpanan** (ketentuan sprint: bukan sekadar informasi visual). *Keputusan terbuka (PM):* (a) Cloud Function callable yang menghitung jarak lalu menulis dokumen kehadiran, dengan Rules melarang tulis langsung dari klien; atau (b) pembatasan di Security Rules dengan perkiraan kotak di sekitar laboratorium, karena haversine sulit dihitung di Rules. Rekomendasi: (a), karena Cloud Functions sudah dibutuhkan untuk push notification. Cloud Functions umumnya membutuhkan paket Blaze pada project Firebase. *Diisi setelah dikonfirmasi:* `____`.
+- **Perbaikan fitur dari sprint 2** Masukan dan koreksi dari asprak berupa format waktu yang diubah dari tipe string menjadi time dan panel navigasi yang lebih lincah bagi pengguna mobile.
+-**Permintaan teknis dari PM sprint 2** Ini Maps API & deployment perlu akses firebasenya. Bisa dikasi ke PM sprint 3 atau yg punya aksesnya bisa nambahin aja 
+- **Validasi lokasi di sisi penyimpanan:** dipilih Cloud Function callable `catatPresensi`. Function menghitung jarak, memeriksa status sesi/keanggotaan/radius, lalu menulis attendance secara atomik. Client tidak boleh menulis attendance langsung. Deployment Functions membutuhkan paket Blaze pada project Firebase.
 - **Push notification** membutuhkan pengirim di sisi server; tidak aman dikirim langsung dari HP asisten.
 - **Maps API key:** dibuat dan dibatasi oleh PM. *Diisi setelah dibuat:* `____`.
-- **Nilai yang ditetapkan di Fase 0:** radius default laboratorium, batas akurasi koordinat, dan definisi *berlangsung/berikutnya*: `____`.
+- **Nilai yang ditetapkan di Fase 0:** radius laboratorium wajib berada pada rentang 1–250 meter; batas akurasi GPS adalah 250 meter; *berlangsung* berarti status `DIBUKA`; *berikutnya* berarti status `BELUM_DIBUKA` dengan waktu terdekat.
 - **Keaslian lokasi:** GPS bisa dipalsukan (mock location). Bila terdeteksi di Android, hasilnya dicatat atau ditolak. *Keputusan terbuka:* di luar kebutuhan wajib sprint.
 - **QR opsional:** dikerjakan hanya setelah fitur wajib selesai. Paket kamera/pemindai adalah paket native; bila dipakai, masukkan ke build ulang Fase 0 agar tidak perlu build ulang kedua.
-- **Tampilan notifikasi saat aplikasi terbuka (foreground):** *keputusan terbuka* (banner dalam aplikasi atau pustaka notifikasi tambahan).
+- **Tampilan notifikasi saat aplikasi terbuka (foreground):** ditangani sebagai event `onMessage`; layar pemakai dapat menampilkan banner lokal tanpa mengirim notifikasi kedua.
 - **Security Rules sementara dari Sprint 2** wajib diganti dengan rules per peran, termasuk `labs`, token, dan `attendance`, sebelum demo.
 - **Build development bersifat bersama:** satu APK baru dipakai semua anggota. Simpan salinan APK di Drive karena artefak EAS kedaluwarsa dalam beberapa hari.
+- **Status implementasi PM:** kontrak data, utilitas geo, hook lokasi, helper token FCM, callable presensi, Cloud Function, dan rules dasar Sprint 3 tersedia. Integrasi layar, CRUD laboratorium, peta, dan trigger notifikasi Firestore tetap harus dikerjakan oleh owner masing-masing dan diuji di perangkat nyata.
 
 ## 14. Referensi materi
 

@@ -36,7 +36,7 @@
         }
       ],
       [
-         "./plugins/withFirebaseBom.js",
+        "./plugins/withFirebaseBom.js",
         {
           "bom": "34.19.0"
         }
@@ -48,13 +48,20 @@
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       [
-  "expo-build-properties",
-  {
-    "android": {
-      "kotlinVersion": "2.2.20"
-    }
-  }
-]
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Izinkan HadirLab menggunakan lokasi untuk memvalidasi presensi dan menampilkan peta laboratorium."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.2.20"
+          }
+        }
+      ],
+      "@react-native-firebase/messaging"
     ],
     "experiments": {
       "typedRoutes": true,

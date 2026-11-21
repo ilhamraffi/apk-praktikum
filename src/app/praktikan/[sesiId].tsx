@@ -9,6 +9,7 @@ import { StatusSesi } from "../../components/asisten/StatusSesi";
 import { ErrorBanner, Loading } from "../../components/shared/StatusLayar";
 import { useAuth } from "../../context/AuthContext";
 import { useJadwalPraktikan } from "../../hooks/useJadwalPraktikan";
+import { useLokasiPerangkat } from "../../hooks/useLokasiPerangkat";
 import { catatPresensiPraktikan, usePresensiPraktikan } from "../../hooks/usePresensiPraktikan";
 import { FormPresensi } from "../../components/praktikan/FormPresensi";
 import { RingkasanPresensi } from "../../components/praktikan/RingkasanPresensi";
@@ -137,6 +138,7 @@ function BagianPresensiPraktikan({ uid, sesi, dariCache }: { uid: string; sesi: 
   const [formTerbuka, setFormTerbuka] = useState(false);
   const hasil = usePresensiPraktikan(uid, sesi.id ? [sesi.id] : []);
   const presensi = sesi.id ? hasil.catatan.get(sesi.id) : undefined;
+  const lokasi = useLokasiPerangkat(sesi.status === "DIBUKA" && !presensi);
   let pesanNonaktif: string | undefined;
   if (!sesi.id) pesanNonaktif = "Identitas sesi tidak valid.";
   else if (hasil.loading) pesanNonaktif = "Sedang memeriksa kehadiranmu...";
@@ -146,6 +148,10 @@ function BagianPresensiPraktikan({ uid, sesi, dariCache }: { uid: string; sesi: 
     ? "Sesi sudah ditutup oleh asisten."
     : "Presensi tersedia setelah sesi dibuka oleh asisten.";
   else if (dariCache || hasil.dariCache) pesanNonaktif = "Menunggu konfirmasi data dari server. Periksa koneksi internetmu.";
+  else if (lokasi.status === "izin_ditolak") pesanNonaktif = "Izin lokasi diperlukan untuk presensi.";
+  else if (lokasi.status === "layanan_mati") pesanNonaktif = "Aktifkan layanan lokasi untuk presensi.";
+  else if (lokasi.status === "tidak_tersedia") pesanNonaktif = "Lokasi belum tersedia. Coba lagi.";
+  else if (lokasi.status === "memuat" || !lokasi.koordinat) pesanNonaktif = "Mencari lokasi perangkat...";
 
   return (
     <View style={styles.feedback}>
@@ -179,7 +185,8 @@ function BagianPresensiPraktikan({ uid, sesi, dariCache }: { uid: string; sesi: 
         onClose={() => setFormTerbuka(false)}
         onSubmit={async (catatan) => {
           if (!sesi.id) throw new Error("Identitas sesi tidak valid.");
-          await catatPresensiPraktikan({ uid, sesiId: sesi.id, catatan });
+          if (!lokasi.koordinat) throw new Error("Lokasi perangkat belum tersedia.");
+          await catatPresensiPraktikan({ uid, sesiId: sesi.id, catatan, koordinat: lokasi.koordinat });
         }}
       />
     </View>

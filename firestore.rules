@@ -17,18 +17,61 @@ service cloud.firestore {
       return signedIn() && profile().role == 'PRAKTIKAN';
     }
 
+    function validText(value, minimum, maximum) {
+      return value is string
+        && value.size() >= minimum
+        && value.size() <= maximum;
+    }
+
     match /users/{uid} {
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
         && request.resource.data.uid == uid
-        && request.resource.data.role in ['PRAKTIKAN', 'ASISTEN'];
+        && validText(request.resource.data.nama, 1, 120)
+        && validText(request.resource.data.nim, 1, 40)
+        && validText(request.resource.data.email, 3, 254)
+        && request.resource.data.role == 'PRAKTIKAN';
       allow read: if signedIn() && (request.auth.uid == uid || isAsisten());
       allow update: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
         && request.resource.data.uid == uid
         && resource.data.uid == uid
+        && validText(request.resource.data.nama, 1, 120)
+        && validText(request.resource.data.nim, 1, 40)
+        && validText(request.resource.data.email, 3, 254)
         && request.resource.data.role == resource.data.role;
       allow delete: if false;
+    }
+
+    match /labs/{labId} {
+      allow read: if signedIn();
+      allow create, update: if isAsisten()
+        && request.resource.data.keys().hasOnly([
+          'nama', 'gedung', 'latitude', 'longitude', 'radiusMeter',
+          'dibuatPada', 'diubahPada'
+        ])
+        && validText(request.resource.data.nama, 1, 120)
+        && (!('gedung' in request.resource.data)
+          || validText(request.resource.data.gedung, 0, 160))
+        && request.resource.data.latitude is number
+        && request.resource.data.latitude >= -90
+        && request.resource.data.latitude <= 90
+        && request.resource.data.longitude is number
+        && request.resource.data.longitude >= -180
+        && request.resource.data.longitude <= 180
+        && request.resource.data.radiusMeter is number
+        && request.resource.data.radiusMeter > 0
+        && request.resource.data.radiusMeter <= 250;
+      allow delete: if isAsisten();
+    }
+
+    match /users/{uid}/fcmTokens/{token} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAsisten());
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['platform', 'diperbaruiPada'])
+        && request.resource.data.platform in ['android', 'ios'];
+      allow delete: if signedIn() && request.auth.uid == uid;
     }
 
     match /classes/{classId} {
@@ -45,11 +88,9 @@ service cloud.firestore {
 
       match /attendance/{uid} {
         allow read: if isAsisten() || (isPraktikan() && request.auth.uid == uid);
-        allow create: if isPraktikan() && request.auth.uid == uid
-          && get(/databases/$(database)/documents/sessions/$(sessionId)).data.status == 'DIBUKA'
-          && request.auth.uid in get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/sessions/$(sessionId)).data.classId)).data.pesertaUids
-          && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'statusKehadiran', 'catatan', 'waktu'])
-          && request.resource.data.uid == request.auth.uid;
+        // Attendance Sprint 3 is written only by the Admin SDK in
+        // functions/src/index.ts after server-side location validation.
+        allow create: if false;
         allow update, delete: if false;
       }
     }
@@ -84,6 +125,9 @@ service cloud.firestore {
           && request.resource.data.status in ['approved', 'rejected']
           && request.resource.data.diputuskanOleh == request.auth.uid
           && request.resource.data.diputuskanPada == request.time
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'diputuskanOleh', 'diputuskanPada'
+          ])
         );
       allow delete: if false;
     }

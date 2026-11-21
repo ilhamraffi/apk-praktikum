@@ -16,6 +16,22 @@ export type SessionStatus = "BELUM_DIBUKA" | "DIBUKA" | "DITUTUP";
 export type StatusKehadiran = "Hadir" | "Izin";
 export type StatusIzin = "pending" | "approved" | "rejected";
 
+export interface Koordinat {
+  latitude: number;
+  longitude: number;
+  akurasiMeter?: number | null;
+}
+
+/** Dokumen `labs/{labId}` — lokasi dan radius validasi presensi. */
+export interface Lab {
+  id?: string;
+  nama: string;
+  gedung?: string;
+  latitude: number;
+  longitude: number;
+  radiusMeter: number;
+}
+
 /** Dokumen `users/{uid}` — profil pengguna (Auth + peran). */
 export interface ProfilUser {
   uid?: string;
@@ -56,6 +72,9 @@ export interface CatatanPresensi {
   statusKehadiran: StatusKehadiran;
   catatan: string;
   waktu?: Timestamp | string | null; // serverTimestamp -> Timestamp saat dibaca
+  labId?: string;
+  lokasi?: Koordinat | null;
+  jarakMeter?: number | null;
 }
 
 /** Dokumen `permissions/{izinId}`. */
