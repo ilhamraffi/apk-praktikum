@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { pesanError } from "../../lib/errors";
 import type { Kelas } from "../../types";
+import { warna } from "../../theme";
 
 type FormKelasProps = {
   awal?: Kelas | null;
@@ -98,37 +99,37 @@ export function FormKelas({ awal, onBatal, onSimpan }: FormKelasProps) {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, 0.45)" },
+  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: warna.overlay },
   container: { flexGrow: 1, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: warna.kartu,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 32,
   },
-  title: { color: "#0F172A", fontSize: 22, lineHeight: 30, fontWeight: "700" },
-  label: { color: "#334155", fontSize: 14, lineHeight: 22, fontWeight: "600", marginTop: 16 },
+  title: { color: warna.teks, fontSize: 22, lineHeight: 30, fontWeight: "700" },
+  label: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, fontWeight: "600", marginTop: 16 },
   input: {
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: warna.garisKuat,
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
-    color: "#0F172A",
+    color: warna.teks,
     marginTop: 8,
   },
-  error: { color: "#B91C1C", fontSize: 13, lineHeight: 20, marginTop: 12 },
+  error: { color: warna.error, fontSize: 13, lineHeight: 20, marginTop: 12 },
   submit: {
     minHeight: 50,
     borderRadius: 12,
-    backgroundColor: "#1E1B4B",
+    backgroundColor: warna.utama,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 24,
   },
-  submitText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  submitText: { color: warna.utamaTeks, fontSize: 15, fontWeight: "700" },
   cancel: { minHeight: 44, alignItems: "center", justifyContent: "center" },
-  cancelText: { color: "#4338CA", fontWeight: "600" },
+  cancelText: { color: warna.utama, fontWeight: "600" },
   pressed: { opacity: 0.8 },
 });

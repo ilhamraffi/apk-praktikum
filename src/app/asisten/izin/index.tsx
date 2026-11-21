@@ -9,6 +9,7 @@ import { Empty, ErrorBanner, Loading } from "../../../components/shared/StatusLa
 import { useDaftarIzinAsisten } from "../../../hooks/useIzinAsisten";
 import type { StatusIzin } from "../../../types";
 import { formatWaktuIzin, LABEL_STATUS_IZIN } from "../../../utils/izinAsisten";
+import { warna } from "../../../theme";
 
 const FILTER: StatusIzin[] = ["pending", "approved", "rejected"];
 
@@ -20,7 +21,7 @@ function DaftarIzin({ asistenUid }: { asistenUid: string }) {
   const [status, setStatus] = useState<StatusIzin>("pending");
   const hasil = useDaftarIzinAsisten(asistenUid, status);
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <FlatList
         data={hasil.loading || hasil.error ? [] : hasil.izin}
         keyExtractor={(item) => item.id!}
@@ -69,21 +70,21 @@ function DaftarIzin({ asistenUid }: { asistenUid: string }) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
   header: { gap: 12, marginBottom: 24 },
-  title: { color: "#0F172A", fontSize: 28, lineHeight: 36, fontWeight: "700" },
-  subtitle: { color: "#64748B", fontSize: 14, lineHeight: 23 },
+  title: { color: warna.teks, fontSize: 28, lineHeight: 36, fontWeight: "800" },
+  subtitle: { color: warna.teksRedup, fontSize: 14, lineHeight: 23 },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  filter: { minHeight: 48, paddingHorizontal: 16, justifyContent: "center", borderRadius: 12, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
-  activeFilter: { backgroundColor: "#4338CA", borderColor: "#4338CA" },
-  filterText: { color: "#334155", fontSize: 14, fontWeight: "600" },
-  activeFilterText: { color: "#FFFFFF" },
-  card: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 20, gap: 16 },
+  filter: { minHeight: 44, paddingHorizontal: 18, justifyContent: "center", borderRadius: 999, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.permukaanLembut },
+  activeFilter: { backgroundColor: warna.utama, borderColor: warna.utama },
+  filterText: { color: warna.teksIsi, fontSize: 14, fontWeight: "700" },
+  activeFilterText: { color: warna.utamaTeks },
+  card: { backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, borderRadius: 24, padding: 20, gap: 16 },
   separator: { height: 16 },
   linkButton: { alignSelf: "flex-start", minHeight: 48, justifyContent: "center" },
-  detailButton: { minHeight: 48, justifyContent: "center", alignItems: "center", padding: 12, borderRadius: 12, backgroundColor: "#EEF2FF" },
-  link: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
-  notice: { color: "#92400E", fontSize: 13, lineHeight: 21 },
+  detailButton: { minHeight: 48, justifyContent: "center", alignItems: "center", padding: 12, borderRadius: 999, backgroundColor: warna.permukaanLembut },
+  link: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "700" },
+  notice: { color: warna.peringatanTeks, fontSize: 13, lineHeight: 21 },
   feedback: { gap: 12 },
 });

@@ -7,6 +7,7 @@ import { KeputusanPengajuanIzin } from "../../../components/asisten/izin/Keputus
 import { Empty, ErrorBanner, Loading } from "../../../components/shared/StatusLayar";
 import { useDetailIzinAsisten } from "../../../hooks/useIzinAsisten";
 import { formatWaktuIzin, teksIzin } from "../../../utils/izinAsisten";
+import { warna } from "../../../theme";
 
 export default function DetailIzinAsistenScreen() {
   const { izinId } = useLocalSearchParams<{ izinId?: string | string[] }>();
@@ -18,7 +19,7 @@ function DetailIzin({ asistenUid, izinId }: { asistenUid: string; izinId: string
   const hasil = useDetailIzinAsisten(asistenUid, izinId);
   const pengajuan = hasil.pengajuan;
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Link href="/asisten/izin" dismissTo asChild>
           <TouchableOpacity accessibilityRole="link" style={styles.linkButton}><Text style={styles.link}>Kembali ke daftar izin</Text></TouchableOpacity>
@@ -56,13 +57,13 @@ function DetailIzin({ asistenUid, izinId }: { asistenUid: string; izinId: string
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32, gap: 16 },
-  title: { color: "#0F172A", fontSize: 27, lineHeight: 36, fontWeight: "700" },
-  card: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 20, gap: 16 },
+  title: { color: warna.teks, fontSize: 27, lineHeight: 36, fontWeight: "700" },
+  card: { backgroundColor: warna.kartu, borderWidth: 1, borderColor: warna.garis, borderRadius: 20, padding: 20, gap: 16 },
   section: { gap: 8 },
-  muted: { color: "#64748B", fontSize: 14, lineHeight: 23 },
-  notice: { color: "#92400E", fontSize: 13, lineHeight: 21 },
+  muted: { color: warna.teksRedup, fontSize: 14, lineHeight: 23 },
+  notice: { color: warna.peringatanTeks, fontSize: 13, lineHeight: 21 },
   linkButton: { alignSelf: "flex-start", minHeight: 48, justifyContent: "center" },
-  link: { color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  link: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600" },
 });

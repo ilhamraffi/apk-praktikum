@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { SessionStatus } from "../../types";
+import { radius, warna } from "../../theme";
 
 const tampilanStatus: Record<
   SessionStatus,
@@ -7,18 +8,18 @@ const tampilanStatus: Record<
 > = {
   BELUM_DIBUKA: {
     label: "Belum dibuka",
-    warna: "#92400E",
-    latar: "#FEF3C7",
+    warna: warna.teks,
+    latar: warna.aksen,
   },
   DIBUKA: {
     label: "Dibuka",
-    warna: "#166534",
-    latar: "#DCFCE7",
+    warna: warna.suksesTeks,
+    latar: warna.suksesLatar,
   },
   DITUTUP: {
-    label: "Ditutup",
-    warna: "#475569",
-    latar: "#E2E8F0",
+    label: "Selesai",
+    warna: warna.teksIsi,
+    latar: warna.permukaan,
   },
 };
 
@@ -26,8 +27,8 @@ const tampilanStatus: Record<
 export function StatusSesi({ status }: { status: SessionStatus }) {
   const tampilan = tampilanStatus[status] ?? {
     label: "Status tidak tersedia",
-    warna: "#475569",
-    latar: "#E2E8F0",
+    warna: warna.teksIsi,
+    latar: warna.garis,
   };
 
   return (
@@ -36,7 +37,6 @@ export function StatusSesi({ status }: { status: SessionStatus }) {
       accessibilityLabel={`Status sesi: ${tampilan.label}`}
       style={[styles.badge, { backgroundColor: tampilan.latar }]}
     >
-      <View style={[styles.dot, { backgroundColor: tampilan.warna }]} />
       <Text style={[styles.text, { color: tampilan.warna }]}>
         {tampilan.label}
       </Text>
@@ -49,11 +49,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: radius.pil,
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  text: { flexShrink: 1, fontSize: 12, lineHeight: 18, fontWeight: "600" },
+  text: { flexShrink: 1, fontSize: 12, lineHeight: 18, fontWeight: "700" },
 });

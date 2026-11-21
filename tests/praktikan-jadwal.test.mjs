@@ -5,6 +5,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadSource } from "./helpers/load-source.mjs";
 
+const theme = loadSource("src/theme.ts");
+const waktuSesi = loadSource("src/utils/waktuSesi.ts");
+const ringkasanSesi = loadSource("src/utils/ringkasanSesi.ts", { "./waktuSesi": waktuSesi });
+
 const errors = loadSource("src/lib/errors.ts");
 const kelas = (id, pesertaUids = ["praktikan-a"]) => ({
   id, nama: `Kelas ${id}`, kode: id, pesertaUids,
@@ -28,6 +32,7 @@ function firestoreHarness() {
     },
   };
   const { langgananJadwalPraktikan } = loadSource("src/hooks/useJadwalPraktikan.ts", {
+    "../utils/waktuSesi": waktuSesi,
     "@react-native-firebase/firestore": firestore,
     "../lib/firebase": { db: {} },
     "../lib/errors": errors,
@@ -188,6 +193,7 @@ function screenHarness({ detail = true, id = "satu", user = { uid: "praktikan-a"
   const native = Object.fromEntries(["FlatList", "ScrollView", "Text", "TouchableOpacity", "View"].map((name) => [name, name]));
   native.StyleSheet = { create: (styles) => styles };
   const exports = loadSource(detail ? "src/app/praktikan/[sesiId].tsx" : "src/app/praktikan/index.tsx", {
+    "../../theme": theme,
     "react/jsx-runtime": { jsx: createElement, jsxs: createElement },
     "expo-router": { Link: "Link", Redirect: "Redirect", useLocalSearchParams: () => ({ sesiId: id }) },
     "react-native": native,
@@ -198,6 +204,9 @@ function screenHarness({ detail = true, id = "satu", user = { uid: "praktikan-a"
       return { sesi: [sesi("satu", "a")], kelas: [kelas("a")], mapKelas: new Map([["a", kelas("a")]]), loading: false, error: null, dariCache: false, cobaLagi: () => {}, ...jadwal };
     } },
     "../../components/shared/StatusLayar": { Loading: "Loading", Empty: "Empty", ErrorBanner: "ErrorBanner" },
+    "../../components/shared/HeaderBeranda": { HeaderBeranda: "HeaderBeranda" },
+    "../../components/shared/KartuStatistik": { KartuStatistik: "KartuStatistik" },
+    "../../utils/ringkasanSesi": ringkasanSesi,
     "../../components/asisten/InformasiSesi": { InformasiSesi: "InformasiSesi" },
     "../../components/asisten/StatusSesi": { StatusSesi: "StatusSesi" },
     "../../components/praktikan/KartuJadwal": { KartuJadwalPraktikan: "KartuJadwalPraktikan" },

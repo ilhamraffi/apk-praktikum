@@ -24,6 +24,7 @@ import {
   perbaruiSesi,
   useSesiDetail,
 } from "../../hooks/useSesi";
+import { warna } from "../../theme";
 
 export default function DetailSesiAsistenScreen() {
   const { sesiId } = useLocalSearchParams<{ sesiId?: string | string[] }>();
@@ -41,7 +42,7 @@ export default function DetailSesiAsistenScreen() {
 
   if (loadingAuth || (loading && !sesi)) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <Loading />
       </SafeAreaView>
     );
@@ -49,7 +50,7 @@ export default function DetailSesiAsistenScreen() {
 
   if (!boleh) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <View style={styles.denied}>
           <Text style={styles.deniedTitle}>Akses ditolak</Text>
           <Text style={styles.deniedText}>
@@ -80,54 +81,60 @@ export default function DetailSesiAsistenScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Link href="/asisten" dismissTo asChild>
+        <View style={styles.topBar}>
           <TouchableOpacity
-            accessibilityRole="link"
+            accessibilityRole="button"
             accessibilityLabel="Kembali ke jadwal praktikum"
             activeOpacity={0.75}
-            style={styles.backButton}
+            onPress={() => router.replace("/asisten")}
+            style={styles.backCircle}
           >
             <Text accessible={false} style={styles.backArrow}>‹</Text>
-            <Text style={styles.backText}>Kembali ke jadwal</Text>
           </TouchableOpacity>
-        </Link>
+          <Text accessibilityRole="header" style={styles.topTitle}>
+            {sesi?.status === "DIBUKA"
+              ? "Sesi presensi"
+              : sesi?.status === "DITUTUP"
+                ? "Rekap kehadiran"
+                : "Detail praktikum"}
+          </Text>
+          <View style={styles.topSpacer} />
+        </View>
 
         {sesi ? (
           <>
-            <View style={styles.hero}>
-              <Text style={styles.eyebrow}>DETAIL SESI</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.infoHeader}>
+                <Text style={styles.eyebrow}>
+                  {kelasLabel ? kelasLabel.toUpperCase() : "DETAIL SESI"}
+                </Text>
+                <StatusSesi status={sesi.status} />
+              </View>
               <Text accessibilityRole="header" style={styles.title}>
                 {sesi.namaPraktikum?.trim() || "Praktikum"}
               </Text>
               {modul ? <Text style={styles.subtitle}>{modul}</Text> : null}
-              <View style={styles.status}>
-                <StatusSesi status={sesi.status} />
-              </View>
-            </View>
 
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text accessibilityRole="header" style={styles.sectionTitle}>
-                  Informasi praktikum
-                </Text>
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={styles.editBtn}
-                    onPress={() => setFormTerbuka(true)}
-                  >
-                    <Text style={styles.editText}>Ubah</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => setHapusTerbuka(true)}
-                  >
-                    <Text style={styles.deleteText}>Hapus</Text>
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.infoBody}>
+                <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
               </View>
-              <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => setFormTerbuka(true)}
+                >
+                  <Text style={styles.editText}>Ubah sesi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => setHapusTerbuka(true)}
+                >
+                  <Text style={styles.deleteText}>Hapus</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {sesi.status !== "DITUTUP" ? (
@@ -179,7 +186,7 @@ export default function DetailSesiAsistenScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: {
     flexGrow: 1,
     width: "100%",
@@ -188,42 +195,89 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 32,
   },
-  backButton: {
-    alignSelf: "flex-start",
-    minHeight: 48,
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 8,
-    marginLeft: -8,
-    marginBottom: 24,
-    borderRadius: 12,
+    gap: 14,
+    marginBottom: 20,
   },
-  backArrow: { color: "#4338CA", fontSize: 28, lineHeight: 32 },
-  backText: { flexShrink: 1, color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "600" },
-  hero: { marginBottom: 28 },
-  eyebrow: { color: "#4338CA", fontSize: 12, lineHeight: 20, fontWeight: "700", letterSpacing: 1 },
-  title: { color: "#0F172A", fontSize: 28, lineHeight: 38, fontWeight: "700", marginTop: 10 },
-  subtitle: { color: "#64748B", fontSize: 15, lineHeight: 24, marginTop: 10 },
-  status: { marginTop: 20 },
-  infoCard: {
-    backgroundColor: "#FFFFFF",
+  backCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: warna.kartuKaca,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 20,
+    borderColor: warna.garis,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backArrow: { color: warna.utama, fontSize: 26, lineHeight: 28, marginTop: -2 },
+  topTitle: {
+    flex: 1,
+    color: warna.teks,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: "800",
+  },
+  topSpacer: { width: 44 },
+  eyebrow: {
+    color: warna.teksRedup,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+  title: { color: warna.teks, fontSize: 24, lineHeight: 32, fontWeight: "800" },
+  subtitle: { color: warna.teksIsi, fontSize: 15, lineHeight: 22, marginTop: 4 },
+  infoCard: {
+    backgroundColor: warna.kartuKaca,
+    borderWidth: 1,
+    borderColor: warna.garis,
+    borderRadius: 24,
     padding: 20,
   },
-  infoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 22 },
-  sectionTitle: { color: "#0F172A", fontSize: 17, lineHeight: 26, fontWeight: "700" },
-  actionRow: { flexDirection: "row", gap: 8 },
-  editBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" },
-  editText: { color: "#334155", fontSize: 13, fontWeight: "600" },
-  deleteBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
-  deleteText: { color: "#B91C1C", fontSize: 13, fontWeight: "700" },
-  emptyTitle: { color: "#0F172A", fontSize: 22, lineHeight: 30, fontWeight: "700", marginTop: 10 },
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+  },
+  infoBody: { marginTop: 14 },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: warna.garis,
+  },
+  editBtn: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: warna.garis,
+    backgroundColor: warna.kartu,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  editText: { color: warna.teks, fontSize: 13, fontWeight: "700" },
+  deleteBtn: {
+    paddingHorizontal: 18,
+    minHeight: 42,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: warna.errorGaris,
+    backgroundColor: warna.errorLatar,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteText: { color: warna.error, fontSize: 13, fontWeight: "700" },
+  emptyTitle: { color: warna.teks, fontSize: 22, lineHeight: 30, fontWeight: "700", marginTop: 10 },
   denied: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
-  deniedTitle: { color: "#0F172A", fontSize: 22, fontWeight: "700" },
-  deniedText: { color: "#64748B", fontSize: 15, lineHeight: 24, textAlign: "center" },
-  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#4338CA" },
-  deniedBtnText: { color: "#FFFFFF", fontWeight: "700" },
+  deniedTitle: { color: warna.teks, fontSize: 22, fontWeight: "700" },
+  deniedText: { color: warna.teksRedup, fontSize: 15, lineHeight: 24, textAlign: "center" },
+  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, backgroundColor: warna.utama },
+  deniedBtnText: { color: warna.utamaTeks, fontWeight: "700" },
 });

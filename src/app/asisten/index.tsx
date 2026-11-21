@@ -1,3 +1,5 @@
+// src/app/asisten/index.tsx
+// Beranda asisten: sapaan, ringkasan sesi, dan jadwal. Kelas, izin, dan profil ada di navbar.
 import { Link } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,16 +12,22 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FormSesi } from "../../components/asisten/FormSesi";
 import { KartuJadwal } from "../../components/asisten/KartuJadwal";
+import { HeaderBeranda } from "../../components/shared/HeaderBeranda";
+import { KartuStatistik } from "../../components/shared/KartuStatistik";
 import {
   Empty,
   ErrorBanner,
   Loading,
 } from "../../components/shared/StatusLayar";
+import { useAuth } from "../../context/AuthContext";
 import { useWajibAsisten } from "../../hooks/useWajibAsisten";
 import { useDaftarKelas } from "../../hooks/useKelas";
 import { buatSesi, useDaftarSesi } from "../../hooks/useSesi";
+import { radius, warna } from "../../theme";
+import { ringkasSesi } from "../../utils/ringkasanSesi";
 
 export default function JadwalAsistenScreen() {
+  const { user } = useAuth();
   const { loading: loadingAuth, boleh } = useWajibAsisten();
   const { sesi, loading, error } = useDaftarSesi();
   const { mapKelas } = useDaftarKelas();
@@ -27,7 +35,7 @@ export default function JadwalAsistenScreen() {
 
   if (loadingAuth) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <Loading />
       </SafeAreaView>
     );
@@ -35,7 +43,7 @@ export default function JadwalAsistenScreen() {
 
   if (!boleh) {
     return (
-      <SafeAreaView style={styles.page}>
+      <SafeAreaView style={styles.page} edges={["top"]}>
         <View style={styles.denied}>
           <Text style={styles.deniedTitle}>Akses ditolak</Text>
           <Text style={styles.deniedText}>
@@ -55,12 +63,13 @@ export default function JadwalAsistenScreen() {
     const k = mapKelas.get(classId);
     return k ? `${k.nama} (${k.kode})` : undefined;
   };
+  const ringkas = ringkasSesi(sesi, new Date());
 
   return (
-    <SafeAreaView style={styles.page}>
+    <SafeAreaView style={styles.page} edges={["top"]}>
       <FlatList
         data={sesi}
-        keyExtractor={(item) => item.id ?? ""}
+        keyExtractor={(item, index) => item.id || `sesi-${index}`}
         renderItem={({ item }) => (
           <KartuJadwal sesi={item} kelasLabel={labelKelas(item.classId)} />
         )}
@@ -68,45 +77,26 @@ export default function JadwalAsistenScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.brandRow}>
-              <View style={styles.brandMark}>
-                <Text style={styles.brandLetter}>H</Text>
-              </View>
-              <View style={styles.brandText}>
-                <Text style={styles.brandName}>HadirLab</Text>
-                <Text style={styles.brandCaption}>Ruang asisten</Text>
-              </View>
+            <HeaderBeranda nama={user?.nama} peran="Ruang asisten" />
+
+            <View style={styles.statistik}>
+              <KartuStatistik angka={ringkas.hariIni} label="Sesi hari ini" />
+              <KartuStatistik angka={ringkas.dibuka} label="Sedang dibuka" />
+              <KartuStatistik angka={ringkas.total} label="Total sesi" />
             </View>
 
-            <View style={styles.headingRow}>
-              <Text accessibilityRole="header" style={styles.title}>
+            <View style={styles.seksi}>
+              <Text accessibilityRole="header" style={styles.seksiJudul}>
                 Jadwal praktikum
               </Text>
-              <View style={styles.countBadge}>
-                <Text style={styles.countText}>{sesi.length} sesi</Text>
-              </View>
-            </View>
-            <Text style={styles.subtitle}>
-              Kelola sesi praktikum: buka/tutup sesi dan pantau rekap kehadiran.
-            </Text>
-
-            <View style={styles.actions}>
               <TouchableOpacity
-                style={styles.primaryBtn}
+                accessibilityRole="button"
+                activeOpacity={0.85}
+                style={styles.tombolTambah}
                 onPress={() => setFormTerbuka(true)}
               >
-                <Text style={styles.primaryText}>Tambah sesi</Text>
+                <Text style={styles.tombolTambahTeks}>+ Tambah sesi</Text>
               </TouchableOpacity>
-              <Link href="/asisten/kelas" asChild>
-                <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn}>
-                  <Text style={styles.secondaryText}>Kelola kelas & peserta</Text>
-                </TouchableOpacity>
-              </Link>
-              <Link href="/asisten/izin" asChild>
-                <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn}>
-                  <Text style={styles.secondaryText}>Pemeriksaan izin</Text>
-                </TouchableOpacity>
-              </Link>
             </View>
 
             {error ? <ErrorBanner message={error} /> : null}
@@ -136,7 +126,7 @@ export default function JadwalAsistenScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: { flex: 1, backgroundColor: warna.latar },
   content: {
     flexGrow: 1,
     width: "100%",
@@ -146,32 +136,19 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   separator: { height: 16 },
-  header: { marginBottom: 24 },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 32 },
-  brandMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "#1E1B4B",
+  header: { marginBottom: 20, gap: 20 },
+  statistik: { flexDirection: "row", gap: 10 },
+  seksi: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  seksiJudul: { flexShrink: 1, color: warna.teks, fontSize: 20, lineHeight: 28, fontWeight: "700" },
+  tombolTambah: {
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: radius.pil,
+    backgroundColor: warna.utama,
     alignItems: "center",
     justifyContent: "center",
   },
-  brandLetter: { color: "#FFFFFF", fontSize: 22, fontWeight: "700" },
-  brandText: { flex: 1 },
-  dashboardButton: { minHeight: 48, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
-  dashboardText: { color: "#4338CA", fontSize: 13, lineHeight: 20, fontWeight: "600" },
-  brandName: { color: "#0F172A", fontSize: 18, lineHeight: 24, fontWeight: "700" },
-  brandCaption: { color: "#64748B", fontSize: 13, lineHeight: 20 },
-  headingRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 12, marginBottom: 10 },
-  title: { color: "#0F172A", fontSize: 28, lineHeight: 36, fontWeight: "700" },
-  countBadge: { backgroundColor: "#E0E7FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
-  countText: { color: "#3730A3", fontSize: 12, lineHeight: 18, fontWeight: "600" },
-  subtitle: { color: "#64748B", fontSize: 15, lineHeight: 24 },
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 16 },
-  primaryBtn: { minHeight: 48, paddingHorizontal: 18, borderRadius: 12, backgroundColor: "#4338CA", alignItems: "center", justifyContent: "center" },
-  primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
-  secondaryBtn: { minHeight: 48, paddingHorizontal: 18, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
-  secondaryText: { color: "#4338CA", fontSize: 14, fontWeight: "600" },
+  tombolTambahTeks: { color: warna.utamaTeks, fontSize: 14, fontWeight: "700" },
   denied: {
     flex: 1,
     alignItems: "center",
@@ -179,8 +156,8 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 10,
   },
-  deniedTitle: { color: "#0F172A", fontSize: 22, fontWeight: "700" },
-  deniedText: { color: "#64748B", fontSize: 15, lineHeight: 24, textAlign: "center" },
-  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#4338CA" },
-  deniedBtnText: { color: "#FFFFFF", fontWeight: "700" },
+  deniedTitle: { color: warna.teks, fontSize: 22, fontWeight: "700" },
+  deniedText: { color: warna.teksRedup, fontSize: 15, lineHeight: 24, textAlign: "center" },
+  deniedBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pil, backgroundColor: warna.utama },
+  deniedBtnText: { color: warna.utamaTeks, fontWeight: "700" },
 });

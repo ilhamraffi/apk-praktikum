@@ -21,7 +21,7 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
         && request.resource.data.uid == uid
-        && request.resource.data.role == 'PRAKTIKAN';
+        && request.resource.data.role in ['PRAKTIKAN', 'ASISTEN'];
       allow read: if signedIn() && (request.auth.uid == uid || isAsisten());
       allow update: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])

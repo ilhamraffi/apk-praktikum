@@ -28,7 +28,7 @@ export function useDaftarPraktikan() {
       q,
       (snap) => {
         setPengguna(
-          snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as ProfilUser),
+          snap.docs.map((d) => ({ ...d.data(), uid: d.id }) as ProfilUser),
         );
         setError(null);
         setLoading(false);

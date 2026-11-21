@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { pesanError } from "../../lib/errors";
 import { ajukanIzinPraktikan, BATAS_ALASAN } from "../../hooks/useIzinPraktikan";
+import { warna } from "../../theme";
 
 export function FormIzin({ uid, sessionId, onSelesai }: { uid: string; sessionId: string; onSelesai: () => void }) {
   const [alasan, setAlasan] = useState("");
@@ -38,7 +39,7 @@ export function FormIzin({ uid, sessionId, onSelesai }: { uid: string; sessionId
       <Text style={styles.counter}>{alasan.length}/{BATAS_ALASAN}</Text>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       <TouchableOpacity onPress={simpan} disabled={memproses} style={styles.button}>
-        {memproses ? <ActivityIndicator color="#FFFFFF" /> : null}
+        {memproses ? <ActivityIndicator color={warna.utamaTeks} /> : null}
         <Text style={styles.buttonText}>{memproses ? "Menyimpan..." : "Kirim pengajuan"}</Text>
       </TouchableOpacity>
     </View>
@@ -46,12 +47,12 @@ export function FormIzin({ uid, sessionId, onSelesai }: { uid: string; sessionId
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 18, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", gap: 10 },
-  title: { color: "#0F172A", fontSize: 19, fontWeight: "700" },
-  subtitle: { color: "#64748B", lineHeight: 21 },
-  input: { minHeight: 110, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 12, textAlignVertical: "top" },
-  counter: { alignSelf: "flex-end", color: "#64748B", fontSize: 12 },
-  error: { color: "#B91C1C", lineHeight: 20 },
-  button: { minHeight: 48, borderRadius: 10, backgroundColor: "#4338CA", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
-  buttonText: { color: "#FFFFFF", fontWeight: "700" },
+  card: { padding: 18, borderRadius: 16, backgroundColor: warna.kartu, borderWidth: 1, borderColor: warna.garis, gap: 10 },
+  title: { color: warna.teks, fontSize: 19, fontWeight: "700" },
+  subtitle: { color: warna.teksRedup, lineHeight: 21 },
+  input: { minHeight: 110, borderWidth: 1, borderColor: warna.garisKuat, borderRadius: 10, padding: 12, textAlignVertical: "top" },
+  counter: { alignSelf: "flex-end", color: warna.teksRedup, fontSize: 12 },
+  error: { color: warna.error, lineHeight: 20 },
+  button: { minHeight: 48, borderRadius: 10, backgroundColor: warna.utama, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  buttonText: { color: warna.utamaTeks, fontWeight: "700" },
 });

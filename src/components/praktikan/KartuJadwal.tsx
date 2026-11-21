@@ -1,11 +1,12 @@
 // src/components/praktikan/KartuJadwal.tsx
 // NOTE: adaptasi minimal agar kompatibel dengan tipe Sprint 2. Pemfilteran
 // jadwal per kelas praktikan menjadi tanggung jawab Fauzan.
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Sesi } from "../../types";
 import { InformasiSesi } from "../asisten/InformasiSesi";
 import { StatusSesi } from "../asisten/StatusSesi";
+import { radius, warna } from "../../theme";
 
 export function KartuJadwalPraktikan({
   sesi,
@@ -14,35 +15,73 @@ export function KartuJadwalPraktikan({
   sesi: Sesi;
   kelasLabel?: string;
 }) {
+  const router = useRouter();
+  const bukaDetail = () => {
+    const id = sesi.id?.trim();
+    if (!id) return;
+    router.navigate({ pathname: "/praktikan/[sesiId]", params: { sesiId: id } });
+  };
+
   return (
-    <Link href={`/praktikan/${sesi.id}`} asChild>
-      <TouchableOpacity
-        accessibilityRole="link"
-        accessibilityLabel={`Lihat detail ${sesi.namaPraktikum}, kelas ${kelasLabel ?? "-"}`}
-        activeOpacity={0.85}
-        style={styles.card}
-      >
+    <TouchableOpacity
+      accessibilityRole="link"
+      accessibilityLabel={`Lihat detail ${sesi.namaPraktikum}, kelas ${kelasLabel ?? "-"}`}
+      activeOpacity={0.85}
+      onPress={bukaDetail}
+      style={styles.card}
+    >
+      <View style={styles.topRow}>
+        <Text style={styles.topLabel}>
+          {sesi.status === "DIBUKA" ? "Praktikum hari ini" : "Jadwal praktikum"}
+        </Text>
         <StatusSesi status={sesi.status} />
-        <View style={styles.heading}>
-          <Text style={styles.title}>{sesi.namaPraktikum}</Text>
-          <Text style={styles.module}>{sesi.modul}</Text>
-        </View>
-        <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
-        <View style={styles.action}>
-          <Text style={styles.actionText}>Lihat detail & presensi</Text>
-          <Text accessible={false} style={styles.arrow}>›</Text>
-        </View>
+      </View>
+      <View style={styles.heading}>
+        <Text style={styles.title}>{sesi.namaPraktikum}</Text>
+        <Text style={styles.module}>{sesi.modul}</Text>
+      </View>
+      <InformasiSesi sesi={sesi} kelasLabel={kelasLabel} />
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={`Buka presensi ${sesi.namaPraktikum}`}
+        activeOpacity={0.85}
+        onPress={bukaDetail}
+        style={styles.action}
+      >
+        <Text style={styles.actionText}>
+          {sesi.status === "DIBUKA" ? "Isi presensi" : "Lihat detail & presensi"}
+        </Text>
       </TouchableOpacity>
-    </Link>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 20, gap: 20 },
-  heading: { gap: 8 },
-  title: { color: "#0F172A", fontSize: 20, lineHeight: 28, fontWeight: "700" },
-  module: { color: "#64748B", fontSize: 14, lineHeight: 22 },
-  action: { minHeight: 48, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9", flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  actionText: { flex: 1, color: "#4338CA", fontSize: 14, lineHeight: 22, fontWeight: "700" },
-  arrow: { color: "#4338CA", fontSize: 28, lineHeight: 32 },
+  card: {
+    backgroundColor: warna.kartuKaca,
+    borderWidth: 1,
+    borderColor: warna.garis,
+    borderRadius: radius.kartu,
+    padding: 20,
+    gap: 16,
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  topLabel: { color: warna.teksRedup, fontSize: 13, fontWeight: "500" },
+  heading: { gap: 6 },
+  title: { color: warna.teks, fontSize: 22, lineHeight: 28, fontWeight: "800" },
+  module: { color: warna.teksIsi, fontSize: 14, lineHeight: 22 },
+  action: {
+    minHeight: 50,
+    borderRadius: radius.pil,
+    backgroundColor: warna.utama,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  actionText: { color: warna.utamaTeks, fontSize: 15, lineHeight: 22, fontWeight: "700" },
 });
