@@ -1,10 +1,11 @@
 // src/hooks/useSesi.ts
 // Sesi/jadwal (CRUD) + buka/tutup sesi — milik Ilham (SRS-02, 03, 04).
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -12,16 +13,105 @@ import {
   where,
   writeBatch,
 } from "@react-native-firebase/firestore";
-import { db } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
 import type { Kelas, Sesi } from "../types";
-import { tambahMinggu, urutkanSesi } from "../utils/waktuSesi";
+import {
+  formatJamInput,
+  formatTanggalPanjang,
+  keDate,
+  tambahMinggu,
+  urutkanSesi,
+} from "../utils/waktuSesi";
 
-/** Daftar sesi real-time (opsional difilter per kelas). */
-export function useDaftarSesi(kelasId?: string) {
-  const [sesi, setSesi] = useState<Sesi[]>([]);
+export function sesiSamaLab(
+  a: { labId?: string | null; ruangan?: string | null },
+  b: { labId?: string | null; ruangan?: string | null },
+): boolean {
+  const labIdA = typeof a.labId === "string" ? a.labId.trim() : "";
+  const labIdB = typeof b.labId === "string" ? b.labId.trim() : "";
+  if (labIdA && labIdB) {
+    return labIdA === labIdB;
+  }
+  const ruangA = typeof a.ruangan === "string" ? a.ruangan.trim().toLowerCase() : "";
+  const ruangB = typeof b.ruangan === "string" ? b.ruangan.trim().toLowerCase() : "";
+  return Boolean(ruangA && ruangB && ruangA === ruangB);
+}
+
+export function cekJadwalLabBentrok(
+  kandidatList: {
+    mulai: Date;
+    selesai: Date;
+    labId?: string | null;
+    ruangan: string;
+    modul: string;
+  }[],
+  daftarSesiAda: readonly Sesi[],
+  abaikanSesiId?: string,
+): string | null {
+  for (const kandidat of kandidatList) {
+    const mulaiBaru = kandidat.mulai.getTime();
+    const selesaiBaru = kandidat.selesai.getTime();
+    if (!Number.isFinite(mulaiBaru) || !Number.isFinite(selesaiBaru)) continue;
+
+    for (const sesiAda of daftarSesiAda) {
+      if (abaikanSesiId && sesiAda.id === abaikanSesiId) continue;
+      if (sesiAda.status === "DITUTUP") continue;
+      if (!sesiSamaLab(kandidat, sesiAda)) continue;
+
+      const mulaiLama = keDate(sesiAda.mulai)?.getTime() ?? null;
+      const selesaiLama = keDate(sesiAda.selesai)?.getTime() ?? null;
+      if (mulaiLama == null || selesaiLama == null) continue;
+
+      // Dua rentang waktu beririsan apabila mulaiBaru < selesaiLama dan selesaiBaru > mulaiLama
+      if (mulaiBaru < selesaiLama && selesaiBaru > mulaiLama) {
+        const tglLama = keDate(sesiAda.mulai)!;
+        const tglSelesaiLama = keDate(sesiAda.selesai)!;
+        const namaLab =
+          kandidat.ruangan?.trim() || sesiAda.ruangan?.trim() || "laboratorium ini";
+        const namaSesiLama =
+          sesiAda.namaPraktikum?.trim() || "Praktikum lain";
+        const modulLama = sesiAda.modul?.trim() ? ` (${sesiAda.modul.trim()})` : "";
+        return `Jadwal bentrok di ${namaLab} dengan ${namaSesiLama}${modulLama} pada ${formatTanggalPanjang(tglLama)} pukul ${formatJamInput(tglLama)}–${formatJamInput(tglSelesaiLama)}.`;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Daftar sesi real-time (opsional difilter per kelas).
+ * Jika `opsi.semua === false` (default), hanya menampilkan sesi yang dimiliki
+ * oleh asisten yang sedang login (`asistenUid === uidAktif`).
+ * Jika `opsi.semua === true` (mis. untuk Peta Laboratorium), seluruh sesi ditampilkan.
+ */
+export function useDaftarSesi(kelasId?: string, opsi?: { semua?: boolean }) {
+  const semua = opsi?.semua ?? false;
+  const uidAktif = auth.currentUser?.uid ?? null;
+  const [sesiRaw, setSesiRaw] = useState<Sesi[]>([]);
+  const [milikKelasIds, setMilikKelasIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dariCache, setDariCache] = useState(false);
+
+  useEffect(() => {
+    if (semua || !uidAktif) return;
+    const unsubKelas = onSnapshot(
+      query(collection(db, "classes")),
+      (snap) => {
+        const ids = new Set<string>();
+        for (const d of snap.docs) {
+          const data = d.data() as Kelas;
+          if (data.asistenUid === uidAktif) {
+            ids.add(d.id);
+          }
+        }
+        setMilikKelasIds(ids);
+      },
+      () => {},
+    );
+    return unsubKelas;
+  }, [semua, uidAktif]);
 
   useEffect(() => {
     const q = kelasId
@@ -29,12 +119,14 @@ export function useDaftarSesi(kelasId?: string) {
       : query(collection(db, "sessions"));
     const unsub = onSnapshot(
       q,
+      { includeMetadataChanges: true },
       (snap) => {
-        setSesi(
+        setSesiRaw(
           snap.docs
             .map((d) => ({ ...d.data(), id: d.id }) as Sesi)
             .sort(urutkanSesi),
         );
+        setDariCache(snap.metadata.fromCache);
         setError(null);
         setLoading(false);
       },
@@ -46,7 +138,16 @@ export function useDaftarSesi(kelasId?: string) {
     return unsub;
   }, [kelasId]);
 
-  return { sesi, loading, error };
+  const sesi = useMemo(() => {
+    if (semua || !uidAktif) return sesiRaw;
+    return sesiRaw.filter(
+      (s) =>
+        s.asistenUid === uidAktif ||
+        (s.classId && milikKelasIds.has(s.classId)),
+    );
+  }, [milikKelasIds, semua, sesiRaw, uidAktif]);
+
+  return { sesi, loading, error, dariCache };
 }
 
 interface SesiDetailState {
@@ -134,22 +235,54 @@ export async function buatSesi(
   input: InputSesi,
   jumlahPertemuan = 1,
 ): Promise<string[]> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error("Silakan masuk sebagai asisten terlebih dahulu.");
+  }
+
+  // Pastikan kelas yang dipilih adalah milik asisten yang sedang login
+  const kelasSnap = await getDoc(doc(db, "classes", input.classId));
+  const kelasData = kelasSnap.data() as Kelas | undefined;
+  if (kelasData?.asistenUid && kelasData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat membuat sesi pada kelas yang Anda buat sendiri.");
+  }
+
   const n = Math.max(1, Math.min(MAKS_PERTEMUAN, Math.floor(jumlahPertemuan)));
+  const kandidatList = Array.from({ length: n }, (_, i) => ({
+    mulai: tambahMinggu(input.mulai, i),
+    selesai: tambahMinggu(input.selesai, i),
+    labId: input.labId ?? null,
+    ruangan: input.ruangan.trim(),
+    modul: n > 1 ? `Pertemuan ${i + 1}` : input.modul.trim(),
+  }));
+
+  // Validasi anti-bentrok terhadap seluruh sesi di laboratorium yang sama
+  const semuaSesiSnap = await getDocs(collection(db, "sessions"));
+  const daftarSesiAda = semuaSesiSnap.docs.map(
+    (d) => ({ ...d.data(), id: d.id }) as Sesi,
+  );
+  const pesanBentrok = cekJadwalLabBentrok(kandidatList, daftarSesiAda);
+  if (pesanBentrok) {
+    throw new Error(pesanBentrok);
+  }
+
   const seriId = n > 1 ? doc(collection(db, "sessions")).id : null;
   const batch = writeBatch(db);
   const ids: string[] = [];
 
   for (let i = 0; i < n; i++) {
     const ref = doc(collection(db, "sessions"));
+    const kandidat = kandidatList[i]!;
     ids.push(ref.id);
     batch.set(ref, {
       classId: input.classId,
+      asistenUid: uid,
       namaPraktikum: input.namaPraktikum.trim(),
-      modul: n > 1 ? `Pertemuan ${i + 1}` : input.modul.trim(),
-      mulai: tambahMinggu(input.mulai, i),
-      selesai: tambahMinggu(input.selesai, i),
-      ruangan: input.ruangan.trim(),
-      labId: input.labId ?? null,
+      modul: kandidat.modul,
+      mulai: kandidat.mulai,
+      selesai: kandidat.selesai,
+      ruangan: kandidat.ruangan,
+      labId: kandidat.labId,
       status: "BELUM_DIBUKA",
       seriId,
       pertemuanKe: n > 1 ? i + 1 : null,
@@ -164,22 +297,115 @@ export async function perbaruiSesi(
   id: string,
   input: Partial<InputSesi>,
 ): Promise<void> {
-  await updateDoc(doc(db, "sessions", id), input);
+  const uid = auth.currentUser?.uid;
+  const sesiRef = doc(db, "sessions", id);
+  const sesiSnap = await getDoc(sesiRef);
+  if (!sesiSnap.exists()) {
+    throw new Error("Sesi tidak ditemukan.");
+  }
+  const sesiSekarang = { ...sesiSnap.data(), id: sesiSnap.id } as Sesi;
+  if (sesiSekarang.asistenUid && sesiSekarang.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat mengubah sesi dari kelas yang Anda kelola sendiri.");
+  }
+
+  const mulaiBaru = input.mulai ?? keDate(sesiSekarang.mulai);
+  const selesaiBaru = input.selesai ?? keDate(sesiSekarang.selesai);
+  const labIdBaru = input.labId !== undefined ? input.labId : sesiSekarang.labId;
+  const ruanganBaru =
+    input.ruangan !== undefined ? input.ruangan.trim() : sesiSekarang.ruangan;
+  const modulBaru =
+    input.modul !== undefined ? input.modul.trim() : sesiSekarang.modul;
+
+  if (mulaiBaru && selesaiBaru) {
+    const semuaSesiSnap = await getDocs(collection(db, "sessions"));
+    const daftarSesiAda = semuaSesiSnap.docs.map(
+      (d) => ({ ...d.data(), id: d.id }) as Sesi,
+    );
+    const pesanBentrok = cekJadwalLabBentrok(
+      [
+        {
+          mulai: mulaiBaru,
+          selesai: selesaiBaru,
+          labId: labIdBaru ?? null,
+          ruangan: ruanganBaru,
+          modul: modulBaru,
+        },
+      ],
+      daftarSesiAda,
+      id,
+    );
+    if (pesanBentrok) {
+      throw new Error(pesanBentrok);
+    }
+  }
+
+  await updateDoc(sesiRef, {
+    ...input,
+    asistenUid: sesiSekarang.asistenUid ?? uid ?? null,
+  });
 }
 
 /** Hapus sesi beserta subkoleksi attendance-nya. */
 export async function hapusSesi(id: string): Promise<void> {
-  const attSnap = await getDocs(collection(db, "sessions", id, "attendance"));
-  const batch = writeBatch(db);
-  attSnap.docs.forEach((d) => batch.delete(d.ref));
-  if (!attSnap.empty) await batch.commit();
+  const uid = auth.currentUser?.uid;
+  const sesiSnap = await getDoc(doc(db, "sessions", id));
+  const sesiData = sesiSnap.data() as Sesi | undefined;
+  if (sesiData?.asistenUid && sesiData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat menghapus sesi yang Anda buat sendiri.");
+  }
+  try {
+    const attSnap = await getDocs(collection(db, "sessions", id, "attendance"));
+    if (!attSnap.empty) {
+      const batch = writeBatch(db);
+      attSnap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch {
+    // Jika Firestore Security Rules memblokir delete pada subkoleksi attendance
+    // (allow update, delete: if false), tetap lanjutkan menghapus dokumen sesi induk.
+  }
   await deleteDoc(doc(db, "sessions", id));
 }
 
 export async function bukaSesi(id: string): Promise<void> {
-  await updateDoc(doc(db, "sessions", id), { status: "DIBUKA" });
+  const uid = auth.currentUser?.uid;
+  const sesiRef = doc(db, "sessions", id);
+  const sesiSnap = await getDoc(sesiRef);
+  if (!sesiSnap.exists()) {
+    throw new Error("Sesi praktikum tidak ditemukan.");
+  }
+  const sesiData = { ...sesiSnap.data(), id: sesiSnap.id } as Sesi;
+  if (sesiData.asistenUid && sesiData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat membuka sesi praktikum milik Anda sendiri.");
+  }
+
+  // Pastikan di laboratorium yang sama tidak sedang ada sesi lain yang berstatus DIBUKA
+  const aktifSnap = await getDocs(
+    query(collection(db, "sessions"), where("status", "==", "DIBUKA")),
+  );
+  for (const d of aktifSnap.docs) {
+    if (d.id === id) continue;
+    const sesiAktif = { ...d.data(), id: d.id } as Sesi;
+    if (sesiSamaLab(sesiData, sesiAktif)) {
+      const namaLab = sesiData.ruangan?.trim() || "Laboratorium ini";
+      const namaAktif = sesiAktif.namaPraktikum?.trim() || "Praktikum lain";
+      const modulAktif = sesiAktif.modul?.trim() ? ` (${sesiAktif.modul.trim()})` : "";
+      throw new Error(
+        `${namaLab} sedang digunakan oleh ${namaAktif}${modulAktif} yang masih dibuka. Tutup sesi tersebut terlebih dahulu.`,
+      );
+    }
+  }
+
+  await updateDoc(sesiRef, { status: "DIBUKA" });
 }
 
 export async function tutupSesi(id: string): Promise<void> {
-  await updateDoc(doc(db, "sessions", id), { status: "DITUTUP" });
+  const uid = auth.currentUser?.uid;
+  const sesiRef = doc(db, "sessions", id);
+  const sesiSnap = await getDoc(sesiRef);
+  const sesiData = sesiSnap.data() as Sesi | undefined;
+  if (sesiData?.asistenUid && sesiData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat menutup sesi praktikum milik Anda sendiri.");
+  }
+  await updateDoc(sesiRef, { status: "DITUTUP" });
 }

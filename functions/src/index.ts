@@ -209,10 +209,19 @@ interface SessionNotificationData {
   classId?: unknown;
   namaPraktikum?: unknown;
   modul?: unknown;
+  mulai?: { toMillis?: () => number } | null;
+  selesai?: { toMillis?: () => number } | null;
   waktu?: unknown;
   labId?: unknown;
   ruangan?: unknown;
   status?: unknown;
+}
+
+function millisOf(ts: unknown): number | null {
+  if (ts && typeof ts === "object" && "toMillis" in ts && typeof (ts as { toMillis?: unknown }).toMillis === "function") {
+    return (ts as { toMillis: () => number }).toMillis();
+  }
+  return null;
 }
 
 interface PermissionNotificationData {
@@ -256,6 +265,8 @@ export const onSessionChanged = onDocumentUpdated(
     const statusDibuka =
       before.status !== "DIBUKA" && after.status === "DIBUKA";
     const jadwalBerubah =
+      millisOf(before.mulai) !== millisOf(after.mulai) ||
+      millisOf(before.selesai) !== millisOf(after.selesai) ||
       before.waktu !== after.waktu ||
       before.labId !== after.labId ||
       before.ruangan !== after.ruangan;

@@ -6,6 +6,7 @@ import { BilahTab, type ItemTab } from "../../components/navigasi/BilahTab";
 
 const ITEM: ItemTab[] = [
   { name: "index", label: "Beranda", ikon: "beranda" },
+  { name: "peta", label: "Peta", ikon: "peta" },
   { name: "riwayat", label: "Riwayat", ikon: "riwayat" },
   { name: "izin", label: "Izin", ikon: "izin" },
   { name: "profil", label: "Profil", ikon: "profil" },
@@ -25,6 +26,7 @@ export default function PraktikanLayout() {
       )}
     >
       <Tabs.Screen name="index" />
+      <Tabs.Screen name="peta" />
       <Tabs.Screen name="riwayat" />
       <Tabs.Screen name="izin" />
       <Tabs.Screen name="profil" />

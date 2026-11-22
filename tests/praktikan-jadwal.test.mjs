@@ -206,6 +206,7 @@ function screenHarness({ detail = true, id = "satu", user = { uid: "praktikan-a"
     "../../components/shared/StatusLayar": { Loading: "Loading", Empty: "Empty", ErrorBanner: "ErrorBanner" },
     "../../components/shared/HeaderBeranda": { HeaderBeranda: "HeaderBeranda" },
     "../../components/shared/KartuStatistik": { KartuStatistik: "KartuStatistik" },
+    "../../components/shared/PeringatanPerangkat": { PeringatanNotifikasi: "PeringatanNotifikasi" },
     "../../utils/ringkasanSesi": ringkasanSesi,
     "../../components/asisten/InformasiSesi": { InformasiSesi: "InformasiSesi" },
     "../../components/asisten/StatusSesi": { StatusSesi: "StatusSesi" },
