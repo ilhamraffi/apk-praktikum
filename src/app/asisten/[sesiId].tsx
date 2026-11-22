@@ -15,7 +15,7 @@ import { PembukaanSesi } from "../../components/asisten/PembukaanSesi";
 import { PenutupanSesi } from "../../components/asisten/PenutupanSesi";
 import { RekapPresensi } from "../../components/asisten/RekapPresensi";
 import { StatusSesi } from "../../components/asisten/StatusSesi";
-import { Loading } from "../../components/shared/StatusLayar";
+import { ErrorBanner, Loading } from "../../components/shared/StatusLayar";
 import { useWajibAsisten } from "../../hooks/useWajibAsisten";
 import { useDaftarKelas } from "../../hooks/useKelas";
 import { useDaftarLab } from "../../hooks/useLab";
@@ -25,6 +25,7 @@ import {
   perbaruiSesi,
   useSesiDetail,
 } from "../../hooks/useSesi";
+import { pesanError } from "../../lib/errors";
 import { warna } from "../../theme";
 
 export default function DetailSesiAsistenScreen() {
@@ -41,6 +42,7 @@ export default function DetailSesiAsistenScreen() {
   const [formTerbuka, setFormTerbuka] = useState(false);
   const [hapusTerbuka, setHapusTerbuka] = useState(false);
   const [memprosesHapus, setMemprosesHapus] = useState(false);
+  const [errorHapus, setErrorHapus] = useState<string | null>(null);
 
   if (loadingAuth || (loading && !sesi)) {
     return (
@@ -74,9 +76,14 @@ export default function DetailSesiAsistenScreen() {
   const konfirmasiHapus = async () => {
     if (!sesi?.id) return;
     setMemprosesHapus(true);
+    setErrorHapus(null);
     try {
       await hapusSesi(sesi.id);
+      setHapusTerbuka(false);
       router.replace("/asisten");
+    } catch (err) {
+      setHapusTerbuka(false);
+      setErrorHapus(pesanError(err));
     } finally {
       setMemprosesHapus(false);
     }
@@ -104,6 +111,8 @@ export default function DetailSesiAsistenScreen() {
           </Text>
           <View style={styles.topSpacer} />
         </View>
+
+        {errorHapus ? <ErrorBanner message={errorHapus} /> : null}
 
         {sesi ? (
           <>

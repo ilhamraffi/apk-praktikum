@@ -26,6 +26,7 @@ import {
   useDaftarKelas,
 } from "../../hooks/useKelas";
 import { useDaftarPraktikan } from "../../hooks/usePeserta";
+import { pesanError } from "../../lib/errors";
 import type { Kelas } from "../../types";
 import { warna } from "../../theme";
 
@@ -39,6 +40,7 @@ export default function KelolaKelasScreen() {
   const [kelasDihapus, setKelasDihapus] = useState<Kelas | null>(null);
   const [kelasPeserta, setKelasPeserta] = useState<Kelas | null>(null);
   const [memprosesHapus, setMemprosesHapus] = useState(false);
+  const [errorHapus, setErrorHapus] = useState<string | null>(null);
 
   if (loadingAuth) {
     return (
@@ -68,9 +70,13 @@ export default function KelolaKelasScreen() {
   const konfirmasiHapus = async () => {
     if (!kelasDihapus?.id) return;
     setMemprosesHapus(true);
+    setErrorHapus(null);
     try {
       await hapusKelas(kelasDihapus.id);
       setKelasDihapus(null);
+    } catch (err) {
+      setKelasDihapus(null);
+      setErrorHapus(pesanError(err));
     } finally {
       setMemprosesHapus(false);
     }
@@ -149,6 +155,7 @@ export default function KelolaKelasScreen() {
               <Text style={styles.primaryText}>Tambah kelas</Text>
             </TouchableOpacity>
             {error ? <ErrorBanner message={error} /> : null}
+            {errorHapus ? <ErrorBanner message={errorHapus} /> : null}
           </View>
         }
         ListEmptyComponent={

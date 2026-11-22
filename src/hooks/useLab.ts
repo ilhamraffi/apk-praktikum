@@ -37,13 +37,16 @@ export function useDaftarLab() {
   const [lab, setLab] = useState<Lab[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dariCache, setDariCache] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "labs"), orderBy("nama", "asc"));
     const unsub = onSnapshot(
       q,
+      { includeMetadataChanges: true },
       (snap) => {
         setLab(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Lab));
+        setDariCache(snap.metadata.fromCache);
         setError(null);
         setLoading(false);
       },
@@ -61,7 +64,7 @@ export function useDaftarLab() {
     return map;
   }, [lab]);
 
-  return { lab, mapLab, loading, error };
+  return { lab, mapLab, loading, error, dariCache };
 }
 
 function sanitasiInput(input: InputLab) {

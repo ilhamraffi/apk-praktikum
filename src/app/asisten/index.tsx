@@ -14,6 +14,7 @@ import { FormSesi } from "../../components/asisten/FormSesi";
 import { KartuJadwal } from "../../components/asisten/KartuJadwal";
 import { HeaderBeranda } from "../../components/shared/HeaderBeranda";
 import { KartuStatistik } from "../../components/shared/KartuStatistik";
+import { PeringatanNotifikasi } from "../../components/shared/PeringatanPerangkat";
 import {
   Empty,
   ErrorBanner,
@@ -28,7 +29,12 @@ import { radius, warna } from "../../theme";
 import { ringkasSesi } from "../../utils/ringkasanSesi";
 
 export default function JadwalAsistenScreen() {
-  const { user } = useAuth();
+  const {
+    user,
+    statusNotifikasi,
+    errorNotifikasi,
+    aktifkanUlangNotifikasi,
+  } = useAuth();
   const { loading: loadingAuth, boleh } = useWajibAsisten();
   const { sesi, loading, error } = useDaftarSesi();
   const { mapKelas } = useDaftarKelas();
@@ -87,15 +93,34 @@ export default function JadwalAsistenScreen() {
               <KartuStatistik angka={ringkas.total} label="Total sesi" />
             </View>
 
-            <Link href="/asisten/lab" asChild>
-              <TouchableOpacity
-                accessibilityRole="link"
-                activeOpacity={0.85}
-                style={styles.tombolLab}
-              >
-                <Text style={styles.tombolLabTeks}>Atur laboratorium</Text>
-              </TouchableOpacity>
-            </Link>
+            {statusNotifikasi ? (
+              <PeringatanNotifikasi
+                status={statusNotifikasi}
+                pesanError={errorNotifikasi}
+                onCobaLagi={() => void aktifkanUlangNotifikasi?.()}
+              />
+            ) : null}
+
+            <View style={styles.aksiBaris}>
+              <Link href="/asisten/lab" asChild>
+                <TouchableOpacity
+                  accessibilityRole="link"
+                  activeOpacity={0.85}
+                  style={styles.tombolLab}
+                >
+                  <Text style={styles.tombolLabTeks}>Atur laboratorium</Text>
+                </TouchableOpacity>
+              </Link>
+              <Link href="/asisten/peta" asChild>
+                <TouchableOpacity
+                  accessibilityRole="link"
+                  activeOpacity={0.85}
+                  style={styles.tombolLab}
+                >
+                  <Text style={styles.tombolLabTeks}>Peta laboratorium</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
 
             <View style={styles.seksi}>
               <Text accessibilityRole="header" style={styles.seksiJudul}>
@@ -146,13 +171,16 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     alignSelf: "center",
     padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 112,
   },
   separator: { height: 16 },
   header: { marginBottom: 20, gap: 20 },
   statistik: { flexDirection: "row", gap: 10 },
+  aksiBaris: { flexDirection: "row", gap: 10 },
   tombolLab: {
+    flex: 1,
     minHeight: 48,
+    paddingHorizontal: 12,
     borderRadius: radius.pil,
     borderWidth: 1,
     borderColor: warna.garis,

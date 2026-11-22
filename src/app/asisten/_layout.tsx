@@ -7,6 +7,7 @@ import { BilahTab, type ItemTab } from "../../components/navigasi/BilahTab";
 const ITEM: ItemTab[] = [
   { name: "index", label: "Beranda", ikon: "beranda" },
   { name: "kelas", label: "Kelas", ikon: "kelas" },
+  { name: "peta", label: "Peta", ikon: "peta" },
   { name: "izin", label: "Izin", ikon: "izin" },
   { name: "profil", label: "Profil", ikon: "profil" },
 ];
@@ -20,12 +21,13 @@ export default function AsistenLayout() {
         <BilahTab
           {...props}
           item={ITEM}
-          alias={{ "[sesiId]": "index", lab: "kelas" }}
+          alias={{ "[sesiId]": "index", lab: "peta" }}
         />
       )}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="kelas" />
+      <Tabs.Screen name="peta" />
       <Tabs.Screen name="izin" />
       <Tabs.Screen name="profil" />
       <Tabs.Screen name="[sesiId]" />

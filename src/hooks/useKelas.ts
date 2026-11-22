@@ -21,9 +21,16 @@ import { auth, db } from "../lib/firebase";
 import { pesanError } from "../lib/errors";
 import type { Kelas, ProfilUser } from "../types";
 
-/** Daftar kelas real-time. */
-export function useDaftarKelas() {
-  const [kelas, setKelas] = useState<Kelas[]>([]);
+/**
+ * Daftar kelas real-time.
+ * Jika `semua === false` (default), maka hanya menampilkan kelas milik asisten
+ * yang sedang login (`asistenUid === uidAktif`).
+ * Jika `semua === true` (mis. untuk Peta Laboratorium bersama), seluruh kelas dikembalikan.
+ */
+export function useDaftarKelas(opsi?: { semua?: boolean }) {
+  const semua = opsi?.semua ?? false;
+  const uidAktif = auth.currentUser?.uid ?? null;
+  const [kelasRaw, setKelasRaw] = useState<Kelas[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +39,7 @@ export function useDaftarKelas() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setKelas(
+        setKelasRaw(
           snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Kelas),
         );
         setError(null);
@@ -45,6 +52,11 @@ export function useDaftarKelas() {
     );
     return unsub;
   }, []);
+
+  const kelas = useMemo(() => {
+    if (semua || !uidAktif) return kelasRaw;
+    return kelasRaw.filter((k) => k.asistenUid === uidAktif);
+  }, [kelasRaw, semua, uidAktif]);
 
   const mapKelas = useMemo(() => {
     const map = new Map<string, Kelas>();
@@ -59,10 +71,15 @@ export async function buatKelas(input: {
   nama: string;
   kode: string;
 }): Promise<string> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error("Silakan masuk sebagai asisten terlebih dahulu.");
+  }
   const ref = await addDoc(collection(db, "classes"), {
     nama: input.nama.trim(),
     kode: input.kode.trim(),
     pesertaUids: [],
+    asistenUid: uid,
   });
   return ref.id;
 }
@@ -71,8 +88,18 @@ export async function perbaruiKelas(
   id: string,
   input: { nama: string; kode: string },
 ): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  const kelasSnap = await getDoc(doc(db, "classes", id));
+  const kelasData = kelasSnap.data() as Kelas | undefined;
+  if (kelasData?.asistenUid && kelasData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat mengubah kelas yang Anda buat sendiri.");
+  }
   const nama = input.nama.trim();
-  await updateDoc(doc(db, "classes", id), { nama, kode: input.kode.trim() });
+  await updateDoc(doc(db, "classes", id), {
+    nama,
+    kode: input.kode.trim(),
+    asistenUid: kelasData?.asistenUid ?? uid ?? null,
+  });
   const sesiSnap = await getDocs(
     query(collection(db, "sessions"), where("classId", "==", id)),
   );
@@ -85,6 +112,12 @@ export async function perbaruiKelas(
 
 /** Hapus kelas beserta semua sesinya (dan presensi sesi). */
 export async function hapusKelas(id: string): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  const kelasSnap = await getDoc(doc(db, "classes", id));
+  const kelasData = kelasSnap.data() as Kelas | undefined;
+  if (kelasData?.asistenUid && kelasData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat menghapus kelas yang Anda buat sendiri.");
+  }
   const sesiSnap = await getDocs(
     query(collection(db, "sessions"), where("classId", "==", id)),
   );
@@ -96,12 +129,19 @@ export async function hapusKelas(id: string): Promise<void> {
 
 // helper internal: hapus sesi + subkoleksi attendance (dipanggil hapusKelas)
 async function hapusSesiDalam(sesiId: string): Promise<void> {
-  const attSnap = await getDocs(
-    collection(db, "sessions", sesiId, "attendance"),
-  );
-  const batch = writeBatch(db);
-  attSnap.docs.forEach((d) => batch.delete(d.ref));
-  if (!attSnap.empty) await batch.commit();
+  try {
+    const attSnap = await getDocs(
+      collection(db, "sessions", sesiId, "attendance"),
+    );
+    if (!attSnap.empty) {
+      const batch = writeBatch(db);
+      attSnap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch {
+    // Jika Firestore Security Rules memblokir delete subkoleksi attendance,
+    // tetap lanjutkan menghapus dokumen sesi dan kelas.
+  }
   await deleteDoc(doc(db, "sessions", sesiId));
 }
 

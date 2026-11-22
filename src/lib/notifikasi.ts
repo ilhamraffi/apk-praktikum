@@ -1,13 +1,15 @@
 import {
   AuthorizationStatus,
   deleteToken,
+  getInitialNotification,
   getMessaging,
   getToken,
   onMessage,
   onNotificationOpenedApp,
+  onTokenRefresh,
   requestPermission,
 } from "@react-native-firebase/messaging";
-import { Platform } from "react-native";
+import { PermissionsAndroid, Platform } from "react-native";
 import {
   deleteDoc,
   doc,
@@ -18,26 +20,81 @@ import { auth, db } from "./firebase";
 
 const messaging = getMessaging();
 
+export type StatusIzinNotifikasi =
+  | "diizinkan"
+  | "ditolak"
+  | "gagal";
+
+export interface HasilDaftarNotifikasi {
+  token: string | null;
+  status: StatusIzinNotifikasi;
+  pesanError?: string;
+}
+
+async function mintaIzinNotifikasiPerangkat(): Promise<boolean> {
+  if (Platform.OS === "android" && typeof Platform.Version === "number" && Platform.Version >= 33) {
+    try {
+      const hasilAndroid = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      if (hasilAndroid !== PermissionsAndroid.RESULTS.GRANTED) {
+        return false;
+      }
+    } catch {
+      // Lanjutkan ke requestPermission bawaan Firebase Messaging bila PermissionsAndroid gagal
+    }
+  }
+  const izin = await requestPermission(messaging);
+  return (
+    izin === AuthorizationStatus.AUTHORIZED ||
+    izin === AuthorizationStatus.PROVISIONAL
+  );
+}
+
+export async function simpanTokenNotifikasi(uid: string, token: string): Promise<void> {
+  if (!uid || auth.currentUser?.uid !== uid) {
+    throw new Error("Sesi akun tidak valid untuk menyimpan token notifikasi.");
+  }
+  if (!token || token.includes("/")) {
+    throw new Error("Token notifikasi tidak valid.");
+  }
+  await setDoc(doc(db, "users", uid, "fcmTokens", token), {
+    platform: Platform.OS === "ios" ? "ios" : "android",
+    diperbaruiPada: serverTimestamp(),
+  });
+}
+
 export async function daftarkanNotifikasi(uid: string): Promise<string | null> {
   if (!uid || auth.currentUser?.uid !== uid) {
     throw new Error("Sesi akun tidak valid untuk mendaftarkan notifikasi.");
   }
-  const izin = await requestPermission(messaging);
-  if (
-    izin !== AuthorizationStatus.AUTHORIZED &&
-    izin !== AuthorizationStatus.PROVISIONAL
-  ) {
+  const diizinkan = await mintaIzinNotifikasiPerangkat();
+  if (!diizinkan) {
     return null;
   }
   const token = await getToken(messaging);
   if (!token || token.includes("/")) {
     throw new Error("Token notifikasi tidak valid.");
   }
-  await setDoc(doc(db, "users", uid, "fcmTokens", token), {
-    platform: Platform.OS,
-    diperbaruiPada: serverTimestamp(),
-  });
+  await simpanTokenNotifikasi(uid, token);
   return token;
+}
+
+export function pantauRefreshTokenNotifikasi(
+  uid: string,
+  onTokenBaru?: (token: string) => void,
+): () => void {
+  if (!uid) return () => {};
+  return onTokenRefresh(messaging, (tokenBaru) => {
+    if (!tokenBaru || tokenBaru.includes("/") || auth.currentUser?.uid !== uid) return;
+    void simpanTokenNotifikasi(uid, tokenBaru)
+      .then(() => onTokenBaru?.(tokenBaru))
+      .catch(() => {});
+  });
+}
+
+export async function ambilNotifikasiAwal() {
+  return getInitialNotification(messaging);
 }
 
 export async function hapusNotifikasi(uid: string, token: string): Promise<void> {

@@ -79,7 +79,10 @@ export function BilahTab({
   };
 
   return (
-    <View style={[styles.luar, { paddingBottom: Math.max(insets.bottom, 12) + 4 }]}>
+    <View
+      pointerEvents="box-none"
+      style={[styles.luar, { paddingBottom: Math.max(insets.bottom, 12) + 4 }]}
+    >
       <View accessibilityRole="tablist" style={styles.pil}>
         {item.map((tab: ItemTab) => {
           const aktif = disorot === tab.name;
@@ -96,8 +99,16 @@ export function BilahTab({
                 pressed && styles.ditekan,
               ]}
             >
-              <IkonTab nama={tab.ikon} warna={aktif ? warna.utamaTeks : warna.utama} />
-              {aktif ? <Text style={styles.label}>{tab.label}</Text> : null}
+              <IkonTab
+                nama={tab.ikon}
+                warna={aktif ? warna.utamaTeks : warna.utama}
+                ukuran={22}
+              />
+              {aktif ? (
+                <Text numberOfLines={1} style={styles.label}>
+                  {tab.label}
+                </Text>
+              ) : null}
             </Pressable>
           );
         })}
@@ -108,35 +119,51 @@ export function BilahTab({
 
 const styles = StyleSheet.create({
   luar: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    backgroundColor: warna.latar,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 14,
+    paddingTop: 6,
+    backgroundColor: "transparent",
   },
   pil: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    gap: 6,
     borderRadius: radius.pil,
-    borderWidth: 1,
-    borderColor: warna.garis,
-    backgroundColor: warna.kartu,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.88)",
+    backgroundColor: "rgba(254, 250, 246, 0.82)",
     shadowColor: warna.utama,
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
   tab: {
-    height: 48,
+    height: 44,
     borderRadius: radius.pil,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
   },
-  tabBiasa: { width: 48, backgroundColor: warna.permukaanLembut },
-  tabAktif: { paddingHorizontal: 18, backgroundColor: warna.utama },
+  tabBiasa: {
+    width: 44,
+    backgroundColor: "rgba(234, 219, 200, 0.62)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.65)",
+  },
+  tabAktif: {
+    flex: 1,
+    maxWidth: 138,
+    paddingHorizontal: 14,
+    backgroundColor: warna.utama,
+  },
   ditekan: { opacity: 0.85 },
-  label: { color: warna.utamaTeks, fontSize: 14, fontWeight: "700" },
+  label: { color: warna.utamaTeks, fontSize: 13, fontWeight: "700" },
 });

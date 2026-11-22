@@ -47,12 +47,14 @@ export interface Kelas {
   nama: string;
   kode: string;
   pesertaUids: string[];
+  asistenUid?: string | null;
 }
 
 /** Dokumen `sessions/{sessionId}`. */
 export interface Sesi {
   id?: string;
   classId: string;
+  asistenUid?: string | null;
   namaPraktikum: string;        // disalin dari nama kelas saat sesi dibuat
   modul: string;
   mulai?: Timestamp | null;     // baru

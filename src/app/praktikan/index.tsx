@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { KartuJadwalPraktikan } from "../../components/praktikan/KartuJadwal";
 import { HeaderBeranda } from "../../components/shared/HeaderBeranda";
 import { KartuStatistik } from "../../components/shared/KartuStatistik";
+import { PeringatanNotifikasi } from "../../components/shared/PeringatanPerangkat";
 import { Empty, ErrorBanner, Loading } from "../../components/shared/StatusLayar";
 import { useAuth } from "../../context/AuthContext";
 import { useJadwalPraktikan } from "../../hooks/useJadwalPraktikan";
@@ -14,7 +15,14 @@ import { radius, warna } from "../../theme";
 import { ringkasSesi } from "../../utils/ringkasanSesi";
 
 export default function JadwalPraktikanScreen() {
-  const { user, role, loading: loadingAuth } = useAuth();
+  const {
+    user,
+    role,
+    loading: loadingAuth,
+    statusNotifikasi,
+    errorNotifikasi,
+    aktifkanUlangNotifikasi,
+  } = useAuth();
   const uid = !loadingAuth && role === "PRAKTIKAN" ? user?.uid : undefined;
   const { sesi, kelas, mapKelas, loading, error, dariCache, cobaLagi } = useJadwalPraktikan(uid);
 
@@ -74,6 +82,24 @@ export default function JadwalPraktikanScreen() {
               <KartuStatistik angka={ringkas.total} label="Total sesi" />
             </View>
 
+            {statusNotifikasi ? (
+              <PeringatanNotifikasi
+                status={statusNotifikasi}
+                pesanError={errorNotifikasi}
+                onCobaLagi={() => void aktifkanUlangNotifikasi?.()}
+              />
+            ) : null}
+
+            <Link href="/praktikan/peta" asChild>
+              <TouchableOpacity
+                accessibilityRole="link"
+                activeOpacity={0.85}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryText}>Lihat peta laboratorium</Text>
+              </TouchableOpacity>
+            </Link>
+
             <View style={styles.seksi}>
               <Text accessibilityRole="header" style={styles.seksiJudul}>Jadwal saya</Text>
               <Text style={styles.seksiKet}>Pilih sesi untuk presensi</Text>
@@ -112,7 +138,7 @@ export default function JadwalPraktikanScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: warna.latar },
-  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
+  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 112 },
   separator: { height: 16 },
   header: { marginBottom: 20, gap: 20 },
   statistik: { flexDirection: "row", gap: 10 },

@@ -5,9 +5,11 @@
 // Kontrak: useAuth() -> { user, role, loading, signUp, signIn, signOut }
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -19,6 +21,12 @@ import {
 } from "@react-native-firebase/auth";
 import { doc, getDoc, setDoc } from "@react-native-firebase/firestore";
 import { auth, db } from "../lib/firebase";
+import { pesanError } from "../lib/errors";
+import {
+  daftarkanNotifikasi,
+  hapusNotifikasi,
+  pantauRefreshTokenNotifikasi,
+} from "../lib/notifikasi";
 import type { ProfilUser, Role } from "../types";
 
 interface SignUpInput {
@@ -29,6 +37,13 @@ interface SignUpInput {
   role?: Role;
 }
 
+export type StatusNotifikasiAkun =
+  | "idle"
+  | "memuat"
+  | "aktif"
+  | "izin_ditolak"
+  | "gagal";
+
 interface AuthContextValue {
   user: ProfilUser | null;
   role: Role | null;
@@ -37,6 +52,9 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   pilihPeran: (peranBaru: Role) => void;
+  statusNotifikasi: StatusNotifikasiAkun;
+  errorNotifikasi: string | null;
+  aktifkanUlangNotifikasi: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -45,12 +63,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profil, setProfil] = useState<ProfilUser | null>(null);
   const [peranAktif, setPeranAktif] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statusNotifikasi, setStatusNotifikasi] = useState<StatusNotifikasiAkun>("idle");
+  const [errorNotifikasi, setErrorNotifikasi] = useState<string | null>(null);
+  const [percobaanNotif, setPercobaanNotif] = useState(0);
+  const tokenNotifikasiRef = useRef<string | null>(null);
+  const uidProfil = profil?.uid;
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (authUser) => {
       if (!authUser) {
+        tokenNotifikasiRef.current = null;
         setProfil(null);
         setPeranAktif(null);
+        setStatusNotifikasi("idle");
+        setErrorNotifikasi(null);
         setLoading(false);
         return;
       }
@@ -60,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
           const dataProfil = { ...snap.data(), uid: authUser.uid } as ProfilUser;
           setProfil(dataProfil);
-          setPeranAktif(dataProfil.role ?? null);
+          setPeranAktif((prev) => prev ?? dataProfil.role ?? null);
         } else {
           // Beri peringatan di terminal jika profil tidak ditemukan di database
           console.error("PROFIL TIDAK DITEMUKAN untuk uid:", authUser.uid);
@@ -79,6 +105,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return unsub;
   }, []);
+
+  useEffect(() => {
+    if (!uidProfil) return;
+    let aktif = true;
+
+    const daftar = async () => {
+      try {
+        const token = await daftarkanNotifikasi(uidProfil);
+        if (!aktif) return;
+        if (token) {
+          tokenNotifikasiRef.current = token;
+          setStatusNotifikasi("aktif");
+          setErrorNotifikasi(null);
+        } else {
+          tokenNotifikasiRef.current = null;
+          setStatusNotifikasi("izin_ditolak");
+          setErrorNotifikasi(null);
+        }
+      } catch (err) {
+        if (!aktif) return;
+        tokenNotifikasiRef.current = null;
+        setStatusNotifikasi("gagal");
+        setErrorNotifikasi(pesanError(err));
+      }
+    };
+
+    void daftar();
+    const berhentiRefresh = pantauRefreshTokenNotifikasi(uidProfil, (tokenBaru) => {
+      if (!aktif) return;
+      tokenNotifikasiRef.current = tokenBaru;
+      setStatusNotifikasi("aktif");
+      setErrorNotifikasi(null);
+    });
+    return () => {
+      aktif = false;
+      berhentiRefresh();
+    };
+  }, [uidProfil, percobaanNotif]);
+
+  const aktifkanUlangNotifikasi = useCallback(async () => {
+    if (!uidProfil) return;
+    setStatusNotifikasi("memuat");
+    setErrorNotifikasi(null);
+    setPercobaanNotif((n) => n + 1);
+  }, [uidProfil]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -133,13 +204,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!snap.exists()) {
           throw new Error("Profil pengguna belum ditemukan.");
         }
-        setProfil({ uid: credential.user.uid, ...snap.data() } as ProfilUser);
+        setProfil({ ...snap.data(), uid: credential.user.uid } as ProfilUser);
       },
       signOut: async () => {
+        const uidSekarang = auth.currentUser?.uid ?? profil?.uid;
+        const tokenSekarang = tokenNotifikasiRef.current;
+        if (uidSekarang && tokenSekarang) {
+          try {
+            await hapusNotifikasi(uidSekarang, tokenSekarang);
+          } catch {
+            // Jangan gagalkan proses logout bila token sudah terhapus atau offline
+          }
+        }
+        tokenNotifikasiRef.current = null;
         await firebaseSignOut(auth);
       },
+      statusNotifikasi,
+      errorNotifikasi,
+      aktifkanUlangNotifikasi,
     }),
-    [profil, peranAktif, loading],
+    [profil, peranAktif, loading, statusNotifikasi, errorNotifikasi, aktifkanUlangNotifikasi],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

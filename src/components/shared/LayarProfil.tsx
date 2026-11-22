@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { pesanError } from "../../lib/errors";
 import { radius, warna } from "../../theme";
+import { PeringatanNotifikasi } from "./PeringatanPerangkat";
 
 function Baris({ label, nilai }: { label: string; nilai: string }) {
   return (
@@ -18,7 +19,14 @@ function Baris({ label, nilai }: { label: string; nilai: string }) {
 }
 
 export function LayarProfil() {
-  const { user, role, signOut } = useAuth();
+  const {
+    user,
+    role,
+    signOut,
+    statusNotifikasi,
+    errorNotifikasi,
+    aktifkanUlangNotifikasi,
+  } = useAuth();
   if (!user) return null;
 
   const peran = (role ?? user.role) === "ASISTEN" ? "Asisten" : "Praktikan";
@@ -60,6 +68,24 @@ export function LayarProfil() {
           <Baris label="Email" nilai={user.email} />
           <Baris label="Peran aktif" nilai={peran} />
         </View>
+
+        {statusNotifikasi ? (
+          <PeringatanNotifikasi
+            status={statusNotifikasi}
+            pesanError={errorNotifikasi}
+            onCobaLagi={() => void aktifkanUlangNotifikasi?.()}
+          />
+        ) : null}
+
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Buka peta laboratorium"
+          activeOpacity={0.85}
+          onPress={() => router.push("/peta")}
+          style={styles.tombolPeta}
+        >
+          <Text style={styles.tombolPetaTeks}>Buka peta laboratorium</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button"
@@ -135,6 +161,17 @@ const styles = StyleSheet.create({
   },
   barisLabel: { color: warna.teksRedup, fontSize: 14 },
   barisNilai: { flex: 1, color: warna.teks, fontSize: 14, fontWeight: "600", textAlign: "right" },
+  tombolPeta: {
+    minHeight: 52,
+    borderRadius: radius.pil,
+    borderWidth: 1,
+    borderColor: warna.garis,
+    backgroundColor: warna.kartuKaca,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  tombolPetaTeks: { color: warna.utama, fontSize: 15, fontWeight: "700" },
   gantiPeran: {
     minHeight: 52,
     borderRadius: radius.pil,
