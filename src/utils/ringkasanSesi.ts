@@ -50,3 +50,31 @@ export function ringkasSesi(
   }
   return { hariIni, dibuka, total: daftar.length };
 }
+
+/**
+ * Menyaring sesi yang dijadwalkan pada minggu berjalan (hari ini s/d 7 hari ke depan)
+ * atau sesi yang sedang berstatus DIBUKA, agar halaman Beranda tetap ringkas.
+ */
+export function filterSesiMingguIni<T extends Pick<Sesi, "mulai" | "status">>(
+  daftar: readonly T[],
+  sekarang: Date,
+): T[] {
+  const awalHari = new Date(
+    sekarang.getFullYear(),
+    sekarang.getMonth(),
+    sekarang.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+  const batasAkhir = new Date(awalHari.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+
+  return daftar.filter((sesi) => {
+    if (sesi.status === "DIBUKA") return true;
+    const mulai = keDate(sesi.mulai);
+    if (!mulai) return true; // sesi lama tanpa Timestamp tetap ditampilkan
+    const ms = mulai.getTime();
+    return ms >= awalHari.getTime() && ms <= batasAkhir.getTime();
+  });
+}

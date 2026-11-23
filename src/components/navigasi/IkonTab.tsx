@@ -53,10 +53,9 @@ export function IkonTab({ nama, warna, ukuran = 24 }: IkonTabProps) {
 
       {nama === "peta" ? (
         <>
-          <View style={[styles.pinLingkar, garis]} />
-          <View style={[styles.pinTitik, isi]} />
-          <View style={[styles.pinKakiKiri, isi]} />
-          <View style={[styles.pinKakiKanan, isi]} />
+          <View style={[styles.petaLipatKiri, garis]} />
+          <View style={[styles.petaLipatTengah, garis]} />
+          <View style={[styles.petaLipatKanan, garis]} />
         </>
       ) : null}
 
@@ -147,40 +146,40 @@ const styles = StyleSheet.create({
   },
   jarumTegak: { position: "absolute", left: 11, top: 6, width: 2, height: 7, borderRadius: 1 },
   jarumMendatar: { position: "absolute", left: 11, top: 11, width: 5, height: 2, borderRadius: 1 },
-  pinLingkar: {
+  petaLipatKiri: {
     position: "absolute",
-    left: 5,
-    top: 2,
-    width: 14,
-    height: 14,
+    left: 2,
+    top: 4,
+    width: 7,
+    height: 16,
     borderWidth: 2,
-    borderRadius: 7,
+    borderRightWidth: 1,
+    borderTopLeftRadius: 3,
+    borderBottomLeftRadius: 2,
+    transform: [{ skewY: "-10deg" }],
   },
-  pinTitik: {
+  petaLipatTengah: {
     position: "absolute",
-    left: 10,
-    top: 7,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    left: 8.5,
+    top: 5,
+    width: 7,
+    height: 16,
+    borderWidth: 2,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    transform: [{ skewY: "10deg" }],
   },
-  pinKakiKiri: {
+  petaLipatKanan: {
     position: "absolute",
-    left: 7,
-    top: 16,
-    width: 8,
-    height: 2,
-    borderRadius: 1,
-    transform: [{ rotate: "55deg" }],
-  },
-  pinKakiKanan: {
-    position: "absolute",
-    left: 9,
-    top: 16,
-    width: 8,
-    height: 2,
-    borderRadius: 1,
-    transform: [{ rotate: "-55deg" }],
+    left: 15,
+    top: 4,
+    width: 7,
+    height: 16,
+    borderWidth: 2,
+    borderLeftWidth: 1,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 3,
+    transform: [{ skewY: "-10deg" }],
   },
   kepala: {
     position: "absolute",

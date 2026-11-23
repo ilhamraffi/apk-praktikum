@@ -409,3 +409,87 @@ export async function tutupSesi(id: string): Promise<void> {
   }
   await updateDoc(sesiRef, { status: "DITUTUP" });
 }
+
+/**
+ * Memperbarui seluruh sesi dalam satu seri pertemuan berulang (`seriId`).
+ * Menyesuaikan tanggal/jam pertemuan ke-i berdasarkan tanggal `input.mulai` dan `input.selesai`
+ * (pertemuan pertama) ditambah `(i * 7 hari)`, serta memvalidasi bentrok lab terhadap sesi di luar seri ini.
+ */
+export async function perbaruiSeriSesi(
+  seriId: string,
+  input: InputSesi,
+): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error("Silakan masuk sebagai asisten terlebih dahulu.");
+  }
+  const seriSnap = await getDocs(
+    query(collection(db, "sessions"), where("seriId", "==", seriId)),
+  );
+  if (seriSnap.empty) {
+    throw new Error("Rangkaian sesi tidak ditemukan.");
+  }
+  const daftarSeri = seriSnap.docs
+    .map((d) => ({ ...d.data(), id: d.id }) as Sesi)
+    .sort((a, b) => (a.pertemuanKe ?? 0) - (b.pertemuanKe ?? 0));
+
+  for (const s of daftarSeri) {
+    if (s.asistenUid && s.asistenUid !== uid) {
+      throw new Error("Anda hanya dapat mengubah sesi milik Anda sendiri.");
+    }
+  }
+
+  const kandidatList = daftarSeri.map((s, idx) => ({
+    mulai: tambahMinggu(input.mulai, idx),
+    selesai: tambahMinggu(input.selesai, idx),
+    labId: input.labId ?? null,
+    ruangan: input.ruangan.trim(),
+    modul: s.modul || `Pertemuan ${idx + 1}`,
+  }));
+
+  const seriIdSet = new Set(daftarSeri.map((s) => s.id));
+  const semuaSesiSnap = await getDocs(collection(db, "sessions"));
+  const sesiLuarSeri = semuaSesiSnap.docs
+    .filter((d) => !seriIdSet.has(d.id))
+    .map((d) => ({ ...d.data(), id: d.id }) as Sesi);
+
+  const pesanBentrok = cekJadwalLabBentrok(kandidatList, sesiLuarSeri);
+  if (pesanBentrok) {
+    throw new Error(pesanBentrok);
+  }
+
+  const batch = writeBatch(db);
+  daftarSeri.forEach((s, idx) => {
+    const kandidat = kandidatList[idx]!;
+    batch.update(doc(db, "sessions", s.id!), {
+      classId: input.classId,
+      namaPraktikum: input.namaPraktikum.trim(),
+      mulai: kandidat.mulai,
+      selesai: kandidat.selesai,
+      ruangan: kandidat.ruangan,
+      labId: kandidat.labId,
+      asistenUid: s.asistenUid ?? uid,
+    });
+  });
+  await batch.commit();
+}
+
+/** Menghapus seluruh sesi dalam satu rangkaian seri pertemuan (`seriId`) sekaligus. */
+export async function hapusSeriSesi(seriId: string): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  const seriSnap = await getDocs(
+    query(collection(db, "sessions"), where("seriId", "==", seriId)),
+  );
+  if (seriSnap.empty) return;
+
+  for (const d of seriSnap.docs) {
+    const data = d.data() as Sesi;
+    if (data.asistenUid && data.asistenUid !== uid) {
+      throw new Error("Anda hanya dapat menghapus sesi milik Anda sendiri.");
+    }
+  }
+
+  for (const d of seriSnap.docs) {
+    await hapusSesi(d.id);
+  }
+}
