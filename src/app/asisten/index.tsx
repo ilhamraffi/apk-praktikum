@@ -1,7 +1,7 @@
 // src/app/asisten/index.tsx
 // Beranda asisten: sapaan, ringkasan sesi, dan jadwal. Kelas, izin, dan profil ada di navbar.
 import { Link } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -26,7 +26,7 @@ import { useDaftarKelas } from "../../hooks/useKelas";
 import { useDaftarLab } from "../../hooks/useLab";
 import { buatSesi, useDaftarSesi } from "../../hooks/useSesi";
 import { radius, warna } from "../../theme";
-import { ringkasSesi } from "../../utils/ringkasanSesi";
+import { filterSesiMingguIni, ringkasSesi } from "../../utils/ringkasanSesi";
 
 export default function JadwalAsistenScreen() {
   const {
@@ -40,6 +40,12 @@ export default function JadwalAsistenScreen() {
   const { mapKelas } = useDaftarKelas();
   const { mapLab } = useDaftarLab();
   const [formTerbuka, setFormTerbuka] = useState(false);
+
+  const sekarang = useMemo(() => new Date(), []);
+  const sesiMingguIni = useMemo(
+    () => filterSesiMingguIni(sesi, sekarang),
+    [sesi, sekarang],
+  );
 
   if (loadingAuth) {
     return (
@@ -71,12 +77,12 @@ export default function JadwalAsistenScreen() {
     const k = mapKelas.get(classId);
     return k ? `${k.nama} (${k.kode})` : undefined;
   };
-  const ringkas = ringkasSesi(sesi, new Date());
+  const ringkas = ringkasSesi(sesi, sekarang);
 
   return (
     <SafeAreaView style={styles.page} edges={["top"]}>
       <FlatList
-        data={sesi}
+        data={sesiMingguIni}
         keyExtractor={(item, index) => item.id || `sesi-${index}`}
         renderItem={({ item }) => (
           <KartuJadwal sesi={item} kelasLabel={labelKelas(item.classId)} />
@@ -108,7 +114,9 @@ export default function JadwalAsistenScreen() {
                   activeOpacity={0.85}
                   style={styles.tombolLab}
                 >
-                  <Text style={styles.tombolLabTeks}>Atur laboratorium</Text>
+                  <Text numberOfLines={1} style={styles.tombolLabTeks}>
+                    Atur lab
+                  </Text>
                 </TouchableOpacity>
               </Link>
               <Link href="/asisten/peta" asChild>
@@ -117,14 +125,16 @@ export default function JadwalAsistenScreen() {
                   activeOpacity={0.85}
                   style={styles.tombolLab}
                 >
-                  <Text style={styles.tombolLabTeks}>Peta laboratorium</Text>
+                  <Text numberOfLines={1} style={styles.tombolLabTeks}>
+                    Peta lab
+                  </Text>
                 </TouchableOpacity>
               </Link>
             </View>
 
             <View style={styles.seksi}>
               <Text accessibilityRole="header" style={styles.seksiJudul}>
-                Jadwal praktikum
+                Jadwal minggu ini
               </Text>
               <TouchableOpacity
                 accessibilityRole="button"
@@ -144,8 +154,16 @@ export default function JadwalAsistenScreen() {
             <Loading />
           ) : (
             <Empty
-              title="Belum ada jadwal"
-              description="Tambahkan sesi praktikum untuk memulai."
+              title={
+                sesi.length > 0
+                  ? "Tidak ada jadwal minggu ini"
+                  : "Belum ada jadwal"
+              }
+              description={
+                sesi.length > 0
+                  ? "Anda memiliki jadwal pada minggu lainnya. Buka tab Kelas › Sesi untuk melihat atau mengubah seluruh sesi."
+                  : "Tambahkan sesi praktikum untuk memulai."
+              }
             />
           )
         }
@@ -179,8 +197,8 @@ const styles = StyleSheet.create({
   aksiBaris: { flexDirection: "row", gap: 10 },
   tombolLab: {
     flex: 1,
-    minHeight: 48,
-    paddingHorizontal: 12,
+    height: 46,
+    paddingHorizontal: 14,
     borderRadius: radius.pil,
     borderWidth: 1,
     borderColor: warna.garis,
@@ -188,7 +206,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tombolLabTeks: { color: warna.utama, fontSize: 14, fontWeight: "700" },
+  tombolLabTeks: {
+    color: warna.utama,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   seksi: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   seksiJudul: { flexShrink: 1, color: warna.teks, fontSize: 20, lineHeight: 28, fontWeight: "700" },
   tombolTambah: {
