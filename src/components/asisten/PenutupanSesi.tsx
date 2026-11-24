@@ -82,7 +82,7 @@ export function PenutupanSesi({ sesi }: { sesi: Sesi }) {
             Sesi ini sudah ditutup. Praktikan tidak dapat melakukan presensi lagi.
           </Text>
           <Text style={styles.closedText}>
-            Rekap kehadiran tetap tersedia di bawah. Sesi tidak dapat dibuka kembali.
+            Rekap kehadiran tetap tersedia di bawah. Anda dapat membuka kembali sesi jika masih ada praktikan yang belum melakukan presensi.
           </Text>
         </View>
       )}

@@ -113,7 +113,7 @@ export function LayarProfil() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: warna.latar },
-  content: { width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32, gap: 16 },
+  content: { width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 124, gap: 16 },
   judul: { color: warna.teks, fontSize: 28, lineHeight: 36, fontWeight: "700", marginBottom: 4 },
   kartuProfil: {
     alignItems: "center",

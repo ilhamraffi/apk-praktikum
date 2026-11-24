@@ -205,6 +205,41 @@ test("form tidak mengirim ketika sesi menjadi nonaktif dan tidak menawarkan pili
   );
 });
 
+test("form memvalidasi kode presensi acak saat sesi memiliki kodePresensi", async () => {
+  const values = [];
+  const h = formHarness(async (catatan) => {
+    values.push(catatan);
+  });
+  const sesiBerkode = { ...session, kodePresensi: "K8M4P2" };
+  let tree = h.render({ sesi: sesiBerkode });
+
+  // Kosong -> ditolak
+  await buttonWith(tree, "Konfirmasi hadir").props.onPress();
+  tree = h.render({ sesi: sesiBerkode });
+  assert.equal(values.length, 0);
+  assert.match(textOf(tree), /Masukkan kode presensi/);
+
+  // Salah kode -> ditolak
+  const inputKode = nodesOf(tree).find(
+    (node) => node.type === "TextInput" && node.props.accessibilityLabel === "Kode presensi ruangan",
+  );
+  inputKode.props.onChangeText("salah1");
+  tree = h.render({ sesi: sesiBerkode });
+  await buttonWith(tree, "Konfirmasi hadir").props.onPress();
+  tree = h.render({ sesi: sesiBerkode });
+  assert.equal(values.length, 0);
+  assert.match(textOf(tree), /Kode presensi tidak sesuai/);
+
+  // Kode cocok (huruf kecil pun otomatis di-uppercase) -> berhasil
+  nodesOf(tree)
+    .find((node) => node.type === "TextInput" && node.props.accessibilityLabel === "Kode presensi ruangan")
+    .props.onChangeText("k8m4p2");
+  tree = h.render({ sesi: sesiBerkode });
+  await buttonWith(tree, "Konfirmasi hadir").props.onPress();
+  assert.equal(values.length, 1);
+  assert.equal(h.closes(), 1);
+});
+
 function presensiLokasiHarness({
   role = "PRAKTIKAN",
   user = { uid: "praktikan-a" },

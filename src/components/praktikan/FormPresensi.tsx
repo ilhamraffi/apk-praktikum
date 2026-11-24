@@ -21,12 +21,15 @@ export function FormPresensi(props: Props) {
 }
 
 function IsiFormPresensi({ sesi, onClose, onSubmit, pesanNonaktif }: Props) {
+  const [kodeInput, setKodeInput] = useState("");
   const [catatan, setCatatan] = useState("");
   const [error, setError] = useState("");
   const [memproses, setMemproses] = useState(false);
   const terkunci = useRef(false);
   const aktif = useRef(true);
   const insets = useSafeAreaInsets();
+  const kodeWajib = typeof sesi.kodePresensi === "string" ? sesi.kodePresensi.trim().toUpperCase() : "";
+
   useEffect(() => {
     aktif.current = true;
     return () => { aktif.current = false; };
@@ -36,6 +39,17 @@ function IsiFormPresensi({ sesi, onClose, onSubmit, pesanNonaktif }: Props) {
   const submit = async () => {
     // Ref menolak ketukan kedua bahkan sebelum React selesai merender tombol.
     if (terkunci.current || pesanNonaktif) return;
+    if (kodeWajib) {
+      const bersih = kodeInput.trim().toUpperCase();
+      if (!bersih) {
+        setError("Masukkan kode presensi yang ditampilkan oleh asisten di laboratorium.");
+        return;
+      }
+      if (bersih !== kodeWajib) {
+        setError("Kode presensi tidak sesuai. Periksa kembali kode dari asisten.");
+        return;
+      }
+    }
     terkunci.current = true;
     setMemproses(true);
     setError("");
@@ -60,6 +74,23 @@ function IsiFormPresensi({ sesi, onClose, onSubmit, pesanNonaktif }: Props) {
             <Text accessibilityRole="header" style={styles.title}>Konfirmasi kehadiran</Text>
             <Text style={styles.subtitle}>{sesi.namaPraktikum}</Text>
             <Text style={styles.info}>Kehadiran dicatat sebagai Hadir. Pengajuan izin dilakukan melalui menu izin.</Text>
+            {kodeWajib ? (
+              <>
+                <Text style={styles.label}>Kode presensi ruangan *</Text>
+                <TextInput
+                  accessibilityLabel="Kode presensi ruangan"
+                  value={kodeInput}
+                  onChangeText={(t) => setKodeInput(t.replace(/\s+/g, "").toUpperCase())}
+                  placeholder="Contoh: K8M4P2"
+                  placeholderTextColor={warna.placeholder}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={8}
+                  editable={!memproses && !pesanNonaktif}
+                  style={styles.kodeInput}
+                />
+              </>
+            ) : null}
             <Text style={styles.label}>Catatan (opsional)</Text>
             <TextInput
               accessibilityLabel="Catatan presensi"
@@ -98,6 +129,19 @@ const styles = StyleSheet.create({
   subtitle: { color: warna.teksRedup, fontSize: 14, lineHeight: 22 },
   info: { color: warna.teksIsi, fontSize: 14, lineHeight: 23, marginBottom: 8 },
   label: { color: warna.teksIsi, fontSize: 14, lineHeight: 22, fontWeight: "600" },
+  kodeInput: {
+    minHeight: 54,
+    borderWidth: 1.5,
+    borderColor: warna.utama,
+    backgroundColor: warna.inputLatar,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: 4,
+    textAlign: "center",
+    color: warna.utama,
+  },
   input: { minHeight: 80, borderWidth: 1, borderColor: warna.garis, backgroundColor: warna.inputLatar, borderRadius: 16, padding: 14, textAlignVertical: "top", color: warna.teks },
   counter: { alignSelf: "flex-end", color: warna.teksRedup, fontSize: 12 },
   error: { color: warna.error, fontSize: 13, lineHeight: 21 },

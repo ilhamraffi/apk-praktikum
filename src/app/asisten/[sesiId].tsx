@@ -148,10 +148,10 @@ export default function DetailSesiAsistenScreen() {
               </View>
             </View>
 
-            {sesi.status !== "DITUTUP" ? (
-              <PembukaanSesi key={`pembukaan-${sesi.id}`} sesi={sesi} />
+            <PembukaanSesi key={`pembukaan-${sesi.id}`} sesi={sesi} />
+            {sesi.status === "DIBUKA" ? (
+              <PenutupanSesi key={`penutupan-${sesi.id}`} sesi={sesi} />
             ) : null}
-            <PenutupanSesi key={`penutupan-${sesi.id}`} sesi={sesi} />
             <RekapPresensi
               catatan={catatan}
               totalPraktikan={totalPraktikan}
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     alignSelf: "center",
     padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 116,
   },
   topBar: {
     flexDirection: "row",

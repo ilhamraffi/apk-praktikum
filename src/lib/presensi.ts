@@ -5,6 +5,7 @@ interface CatatPresensiRequest {
   sessionId: string;
   catatan: string;
   koordinat: Koordinat;
+  kodePresensi?: string;
 }
 
 interface CatatPresensiResponse {

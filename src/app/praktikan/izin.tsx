@@ -87,7 +87,7 @@ export default function IzinPraktikanScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: warna.latar },
-  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
+  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 112 },
   header: { gap: 12, marginBottom: 16 },
   back: { minHeight: 40, justifyContent: "center" },
   link: { color: warna.utama, fontWeight: "700" },
