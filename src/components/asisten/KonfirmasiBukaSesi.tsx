@@ -5,6 +5,10 @@ import { warna } from "../../theme";
 type KonfirmasiBukaSesiProps = {
   visible: boolean;
   namaPraktikum: string;
+  judul?: string;
+  deskripsi?: string;
+  labelKonfirmasi?: string;
+  peringatan?: string | null;
   onBatal: () => void;
   onKonfirmasi: () => void;
 };
@@ -12,6 +16,10 @@ type KonfirmasiBukaSesiProps = {
 export function KonfirmasiBukaSesi({
   visible,
   namaPraktikum,
+  judul = "Mulai Sesi Praktikum?",
+  deskripsi = "Apakah Anda yakin ingin membuka sesi ini? Praktikan dapat melakukan presensi setelah sesi dibuka.",
+  labelKonfirmasi = "Ya, Buka Sesi",
+  peringatan = null,
   onBatal,
   onKonfirmasi,
 }: KonfirmasiBukaSesiProps) {
@@ -30,13 +38,15 @@ export function KonfirmasiBukaSesi({
             style={styles.dialog}
           >
             <Text accessibilityRole="header" style={styles.title}>
-              Mulai Sesi Praktikum?
+              {judul}
             </Text>
             <Text style={styles.sessionName}>{namaPraktikum}</Text>
-            <Text style={styles.description}>
-              Apakah Anda yakin ingin membuka sesi ini? Praktikan dapat melakukan
-              presensi setelah sesi dibuka.
-            </Text>
+            {peringatan ? (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningText}>{peringatan}</Text>
+              </View>
+            ) : null}
+            <Text style={styles.description}>{deskripsi}</Text>
             <View style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
@@ -58,7 +68,7 @@ export function KonfirmasiBukaSesi({
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.confirmText}>Ya, Buka Sesi</Text>
+                <Text style={styles.confirmText}>{labelKonfirmasi}</Text>
               </Pressable>
             </View>
           </View>
@@ -74,6 +84,18 @@ const styles = StyleSheet.create({
   dialog: { width: "100%", maxWidth: 440, backgroundColor: warna.kartu, borderRadius: 20, padding: 24 },
   title: { color: warna.teks, fontSize: 22, lineHeight: 30, fontWeight: "700" },
   sessionName: { color: warna.utama, fontSize: 14, lineHeight: 22, fontWeight: "600", marginTop: 14 },
+  warningBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: warna.peringatanLatar,
+  },
+  warningText: {
+    color: warna.peringatanTeks,
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
   description: { color: warna.teksRedup, fontSize: 15, lineHeight: 24, marginTop: 12 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 24 },
   button: { flexGrow: 1, flexBasis: 140, minHeight: 48, borderRadius: 12, justifyContent: "center", alignItems: "center", padding: 12 },

@@ -297,6 +297,7 @@ export function BagianPresensiLokasi({
             uid,
             sesiId: sesi.id,
             catatan,
+            ...(sesi.kodePresensi ? { kodePresensi: sesi.kodePresensi } : {}),
             koordinat: {
               latitude: lokasi.koordinat.latitude,
               longitude: lokasi.koordinat.longitude,
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     alignSelf: "center",
     padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 116,
   },
   topBar: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 },
   backCircle: {

@@ -63,6 +63,8 @@ export interface Sesi {
   ruangan: string;              // keterangan tampilan (diisi nama laboratorium)
   labId?: string;               // rujukan `labs/{labId}` untuk validasi lokasi
   status: SessionStatus;
+  kodePresensi?: string | null; // kode acak ruangan saat sesi DIBUKA
+  batasOtomatisTutup?: Timestamp | null; // batas perpanjangan saat sesi dibuka kembali setelah jam selesai
   seriId?: string | null;       // baru: penanda sesi berulang
   pertemuanKe?: number | null;  // baru
 }

@@ -14,6 +14,7 @@ const RADIUS_BUMI_METER = 6_371_000;
 interface RequestData {
   sessionId?: unknown;
   catatan?: unknown;
+  kodePresensi?: unknown;
   koordinat?: {
     latitude?: unknown;
     longitude?: unknown;
@@ -25,6 +26,7 @@ interface SesiData {
   classId?: unknown;
   labId?: unknown;
   status?: unknown;
+  kodePresensi?: unknown;
 }
 
 interface KelasData {
@@ -130,6 +132,22 @@ export const catatPresensi = onCall(async (request) => {
     }
     if (session.status !== "DIBUKA" || typeof session.classId !== "string") {
       throw new HttpsError("failed-precondition", "Sesi belum dibuka.");
+    }
+    const kodeWajib =
+      typeof session.kodePresensi === "string"
+        ? session.kodePresensi.trim().toUpperCase()
+        : "";
+    if (kodeWajib) {
+      const kodeKirim =
+        typeof data.kodePresensi === "string"
+          ? data.kodePresensi.trim().toUpperCase()
+          : "";
+      if (kodeKirim !== kodeWajib) {
+        throw new HttpsError(
+          "permission-denied",
+          "Kode presensi ruangan tidak sesuai.",
+        );
+      }
     }
     if (typeof session.labId !== "string" || !session.labId) {
       throw new HttpsError("failed-precondition", "Sesi belum memiliki laboratorium.");

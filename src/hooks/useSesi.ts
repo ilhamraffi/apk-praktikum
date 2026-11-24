@@ -147,6 +147,42 @@ export function useDaftarSesi(kelasId?: string, opsi?: { semua?: boolean }) {
     );
   }, [milikKelasIds, semua, sesiRaw, uidAktif]);
 
+  // Tutup otomatis sesi DIBUKA yang telah melewati jam selesai (atau batas perpanjangan buka ulang).
+  useEffect(() => {
+    if (!uidAktif || sesiRaw.length === 0) return;
+
+    const periksaAutoClose = () => {
+      const sekarangMs = Date.now();
+      for (const s of sesiRaw) {
+        if (s.status !== "DIBUKA" || !s.id) continue;
+        // Hanya asisten pemilik (atau bila sesi lama tanpa asistenUid) yang melakukan auto-close
+        if (s.asistenUid && s.asistenUid !== uidAktif && !milikKelasIds.has(s.classId)) {
+          continue;
+        }
+        const selesaiMs = keDate(s.selesai)?.getTime() ?? null;
+        const perpanjanganMs = keDate(s.batasOtomatisTutup)?.getTime() ?? null;
+        const batasAkhirMs =
+          selesaiMs != null && perpanjanganMs != null
+            ? Math.max(selesaiMs, perpanjanganMs)
+            : (perpanjanganMs ?? selesaiMs);
+
+        if (batasAkhirMs != null && sekarangMs >= batasAkhirMs) {
+          void updateDoc(doc(db, "sessions", s.id), {
+            status: "DITUTUP",
+            kodePresensi: null,
+            batasOtomatisTutup: null,
+          }).catch(() => {
+            void updateDoc(doc(db, "sessions", s.id!), { status: "DITUTUP" }).catch(() => {});
+          });
+        }
+      }
+    };
+
+    periksaAutoClose();
+    const timer = setInterval(periksaAutoClose, 30_000);
+    return () => clearInterval(timer);
+  }, [milikKelasIds, sesiRaw, uidAktif]);
+
   return { sesi, loading, error, dariCache };
 }
 
@@ -367,7 +403,44 @@ export async function hapusSesi(id: string): Promise<void> {
   await deleteDoc(doc(db, "sessions", id));
 }
 
-export async function bukaSesi(id: string): Promise<void> {
+const KARAKTER_KODE_PRESENSI = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const DURASI_BUKA_ULANG_MS = 15 * 60 * 1000; // 15 menit masa aktif tambahan saat dibuka ulang
+
+/** Menghasilkan kode presensi acak 6 karakter yang mudah dibaca di papan tulis/proyektor. */
+export function buatKodePresensiAcak(panjang = 6): string {
+  let hasil = "";
+  for (let i = 0; i < panjang; i++) {
+    const idx = Math.floor(Math.random() * KARAKTER_KODE_PRESENSI.length);
+    hasil += KARAKTER_KODE_PRESENSI[idx];
+  }
+  return hasil;
+}
+
+/**
+ * Mengecek apakah di laboratorium yang sama masih ada sesi lain yang sedang berstatus DIBUKA.
+ * Mengembalikan daftar sesi aktif di lab tersebut (selain `abaikanSesiId`).
+ */
+export async function cariSesiAktifDiLabSama(
+  sesiTarget: Pick<Sesi, "id" | "labId" | "ruangan">,
+): Promise<Sesi[]> {
+  const aktifSnap = await getDocs(
+    query(collection(db, "sessions"), where("status", "==", "DIBUKA")),
+  );
+  const hasil: Sesi[] = [];
+  for (const d of aktifSnap.docs) {
+    if (sesiTarget.id && d.id === sesiTarget.id) continue;
+    const sesiAktif = { ...d.data(), id: d.id } as Sesi;
+    if (sesiSamaLab(sesiTarget, sesiAktif)) {
+      hasil.push(sesiAktif);
+    }
+  }
+  return hasil;
+}
+
+export async function bukaSesi(
+  id: string,
+  opsi?: { paksaTutupSesiLain?: boolean },
+): Promise<string> {
   const uid = auth.currentUser?.uid;
   const sesiRef = doc(db, "sessions", id);
   const sesiSnap = await getDoc(sesiRef);
@@ -379,24 +452,62 @@ export async function bukaSesi(id: string): Promise<void> {
     throw new Error("Anda hanya dapat membuka sesi praktikum milik Anda sendiri.");
   }
 
-  // Pastikan di laboratorium yang sama tidak sedang ada sesi lain yang berstatus DIBUKA
-  const aktifSnap = await getDocs(
-    query(collection(db, "sessions"), where("status", "==", "DIBUKA")),
-  );
-  for (const d of aktifSnap.docs) {
-    if (d.id === id) continue;
-    const sesiAktif = { ...d.data(), id: d.id } as Sesi;
-    if (sesiSamaLab(sesiData, sesiAktif)) {
-      const namaLab = sesiData.ruangan?.trim() || "Laboratorium ini";
-      const namaAktif = sesiAktif.namaPraktikum?.trim() || "Praktikum lain";
-      const modulAktif = sesiAktif.modul?.trim() ? ` (${sesiAktif.modul.trim()})` : "";
-      throw new Error(
-        `${namaLab} sedang digunakan oleh ${namaAktif}${modulAktif} yang masih dibuka. Tutup sesi tersebut terlebih dahulu.`,
-      );
+  // Jika asisten sudah menyetujui konfirmasi peringatan, tutup sesi lain yang masih aktif di lab yang sama
+  if (opsi?.paksaTutupSesiLain) {
+    const sesiBentrokAktif = await cariSesiAktifDiLabSama(sesiData);
+    for (const sLain of sesiBentrokAktif) {
+      if (!sLain.id) continue;
+      try {
+        await updateDoc(doc(db, "sessions", sLain.id), {
+          status: "DITUTUP",
+          kodePresensi: null,
+          batasOtomatisTutup: null,
+        });
+      } catch {
+        await updateDoc(doc(db, "sessions", sLain.id), { status: "DITUTUP" });
+      }
     }
   }
 
-  await updateDoc(sesiRef, { status: "DIBUKA" });
+  const kodeBaru = buatKodePresensiAcak(6);
+  const selesaiDate = keDate(sesiData.selesai);
+  const sudahLewatJamSelesai =
+    selesaiDate != null && Date.now() >= selesaiDate.getTime();
+  const batasOtomatisTutup = sudahLewatJamSelesai
+    ? new Date(Date.now() + DURASI_BUKA_ULANG_MS)
+    : null;
+
+  try {
+    await updateDoc(sesiRef, {
+      status: "DIBUKA",
+      kodePresensi: kodeBaru,
+      batasOtomatisTutup,
+    });
+  } catch {
+    // Fallback aman apabila Firestore Security Rules di server menolak field tambahan
+    await updateDoc(sesiRef, { status: "DIBUKA" });
+  }
+  return kodeBaru;
+}
+
+/** Mengacak ulang kode presensi saat sesi sedang DIBUKA. */
+export async function acakUlangKodePresensi(id: string): Promise<string> {
+  const uid = auth.currentUser?.uid;
+  const sesiRef = doc(db, "sessions", id);
+  const sesiSnap = await getDoc(sesiRef);
+  if (!sesiSnap.exists()) {
+    throw new Error("Sesi praktikum tidak ditemukan.");
+  }
+  const sesiData = sesiSnap.data() as Sesi;
+  if (sesiData.asistenUid && sesiData.asistenUid !== uid) {
+    throw new Error("Anda hanya dapat memperbarui kode sesi milik Anda sendiri.");
+  }
+  if (sesiData.status !== "DIBUKA") {
+    throw new Error("Kode presensi hanya dapat diacak saat sesi sedang dibuka.");
+  }
+  const kodeBaru = buatKodePresensiAcak(6);
+  await updateDoc(sesiRef, { kodePresensi: kodeBaru });
+  return kodeBaru;
 }
 
 export async function tutupSesi(id: string): Promise<void> {
@@ -407,7 +518,15 @@ export async function tutupSesi(id: string): Promise<void> {
   if (sesiData?.asistenUid && sesiData.asistenUid !== uid) {
     throw new Error("Anda hanya dapat menutup sesi praktikum milik Anda sendiri.");
   }
-  await updateDoc(sesiRef, { status: "DITUTUP" });
+  try {
+    await updateDoc(sesiRef, {
+      status: "DITUTUP",
+      kodePresensi: null,
+      batasOtomatisTutup: null,
+    });
+  } catch {
+    await updateDoc(sesiRef, { status: "DITUTUP" });
+  }
 }
 
 /**

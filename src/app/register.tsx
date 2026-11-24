@@ -8,7 +8,6 @@ import { Loading } from "../components/shared/StatusLayar";
 import { useAuth } from "../context/AuthContext";
 import { pesanError } from "../lib/errors";
 import { radius, warna } from "../theme";
-import type { Role } from "../types";
 import { errEmail, errNim, errSandi, errWajib } from "../utils/validasiAkun";
 
 const SANDI_MINIMAL = 6;
@@ -19,7 +18,6 @@ export default function RegisterScreen() {
   const [nim, setNim] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [peran, setPeran] = useState<Role>("PRAKTIKAN");
   const [dicoba, setDicoba] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [memproses, setMemproses] = useState(false);
@@ -43,7 +41,7 @@ export default function RegisterScreen() {
 
     setMemproses(true);
     try {
-      await signUp({ nama, nim, email, password, role: peran });
+      await signUp({ nama, nim, email, password, role: "PRAKTIKAN" });
     } catch (error) {
       setErrorMessage(pesanError(error));
     } finally {
@@ -67,35 +65,13 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Buat akun</Text>
-          <Text style={styles.cardSub}>Pilih peran akun yang ingin didaftarkan.</Text>
+          <Text style={styles.cardTitle}>Daftar akun praktikan</Text>
+          <Text style={styles.cardSub}>
+            Lengkapi data diri Anda untuk mulai menggunakan HadirLab.
+          </Text>
           <Text style={styles.catatan}>
             <Text style={styles.bintang}>*</Text> wajib diisi
           </Text>
-
-          <Text style={styles.roleLabel}>Daftar sebagai</Text>
-          <View style={styles.roleRow}>
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{ selected: peran === "PRAKTIKAN" }}
-              onPress={() => setPeran("PRAKTIKAN")}
-              style={[styles.roleChip, peran === "PRAKTIKAN" && styles.roleChipActive]}
-            >
-              <Text style={[styles.roleChipText, peran === "PRAKTIKAN" && styles.roleChipTextActive]}>
-                Praktikan
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{ selected: peran === "ASISTEN" }}
-              onPress={() => setPeran("ASISTEN")}
-              style={[styles.roleChip, peran === "ASISTEN" && styles.roleChipActive]}
-            >
-              <Text style={[styles.roleChipText, peran === "ASISTEN" && styles.roleChipTextActive]}>
-                Asisten
-              </Text>
-            </Pressable>
-          </View>
 
           <FormField
             label="Nama lengkap"
@@ -182,23 +158,6 @@ const styles = StyleSheet.create({
   cardSub: { color: warna.teksRedup, fontSize: 13, marginTop: 4 },
   catatan: { color: warna.teksRedup, fontSize: 12, marginTop: 10 },
   bintang: { color: warna.error, fontWeight: "700" },
-  roleLabel: { color: warna.teksIsi, fontSize: 13, fontWeight: "600", marginTop: 14, marginBottom: 8 },
-  roleRow: { flexDirection: "row", gap: 10 },
-  roleChip: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: radius.pil,
-    borderWidth: 1,
-    borderColor: warna.garis,
-    backgroundColor: warna.permukaanLembut,
-    alignItems: "center",
-  },
-  roleChipActive: {
-    backgroundColor: warna.utama,
-    borderColor: warna.utama,
-  },
-  roleChipText: { color: warna.teksIsi, fontSize: 14, fontWeight: "700" },
-  roleChipTextActive: { color: warna.utamaTeks },
   errorBox: {
     color: warna.error,
     backgroundColor: warna.errorLatar,

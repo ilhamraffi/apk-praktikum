@@ -107,7 +107,7 @@ export default function RiwayatPraktikanScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: warna.latar },
-  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
+  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 112 },
   header: { gap: 10, marginBottom: 20 },
   topBar: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 8 },
   backCircle: { width: 44, height: 44, borderRadius: 999, backgroundColor: warna.kartuKaca, borderWidth: 1, borderColor: warna.garis, alignItems: "center", justifyContent: "center" },

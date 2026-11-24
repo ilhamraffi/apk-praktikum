@@ -71,7 +71,7 @@ function DaftarIzin({ asistenUid }: { asistenUid: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: warna.latar },
-  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 32 },
+  content: { flexGrow: 1, width: "100%", maxWidth: 640, alignSelf: "center", padding: 20, paddingBottom: 112 },
   header: { gap: 12, marginBottom: 24 },
   title: { color: warna.teks, fontSize: 28, lineHeight: 36, fontWeight: "800" },
   subtitle: { color: warna.teksRedup, fontSize: 14, lineHeight: 23 },

@@ -12,11 +12,12 @@ interface InputPresensi {
   sesiId: string;
   catatan: string;
   koordinat: Koordinat;
+  kodePresensi?: string;
 }
 
 /** Presensi Sprint 3 selalu divalidasi dan ditulis oleh Cloud Function. */
 export async function catatPresensiPraktikan(input: InputPresensi): Promise<void> {
-  const { uid, sesiId, koordinat } = input;
+  const { uid, sesiId, koordinat, kodePresensi } = input;
   if (!uid || !sesiId || uid.includes("/") || sesiId.includes("/")) {
     throw new Error("Identitas akun atau sesi tidak valid.");
   }
@@ -30,7 +31,12 @@ export async function catatPresensiPraktikan(input: InputPresensi): Promise<void
   ) {
     throw new Error("Lokasi perangkat belum tersedia.");
   }
-  await catatPresensi({ sessionId: sesiId, catatan, koordinat });
+  const kodeBersih = kodePresensi?.trim().toUpperCase();
+  await catatPresensi(
+    kodeBersih
+      ? { sessionId: sesiId, catatan, koordinat, kodePresensi: kodeBersih }
+      : { sessionId: sesiId, catatan, koordinat },
+  );
 }
 
 interface DataPresensiPraktikan {
