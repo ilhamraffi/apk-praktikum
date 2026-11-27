@@ -3,18 +3,25 @@
 // koleksi Firestore. Jangan mengubah tanpa lewat PM.
 //
 // Skema Firestore (lihat README §7):
-//   users/{uid}                         -> ProfilUser
-//   classes/{classId}                   -> Kelas
-//   sessions/{sessionId}                -> Sesi
+//   users/{uid}                           -> ProfilUser
+//   labs/{labId}                          -> Lab
+//   classes/{classId}                     -> Kelas
+//   sessions/{sessionId}                  -> Sesi
 //   sessions/{sessionId}/attendance/{uid} -> CatatanPresensi
-//   permissions/{izinId}                -> PengajuanIzin
+//   permissions/{izinId}                  -> PengajuanIzin
+//   fines/{fineId}                        -> TagihanDenda
+//   payments/{orderId}                    -> TransaksiPembayaran
 
 import type { Timestamp } from "@react-native-firebase/firestore";
 
-export type Role = "ASISTEN" | "PRAKTIKAN";
+/** ASLAB = Asisten Lab (role baru Sprint 4), ASISTEN = Asprak, PRAKTIKAN = Praktikan. */
+export type Role = "ASLAB" | "ASISTEN" | "PRAKTIKAN";
 export type SessionStatus = "BELUM_DIBUKA" | "DIBUKA" | "DITUTUP";
 export type StatusKehadiran = "Hadir" | "Izin";
 export type StatusIzin = "pending" | "approved" | "rejected";
+export type StatusKetepatan = "TEPAT_WAKTU" | "TERLAMBAT";
+export type StatusPembayaran = "pending" | "success" | "failed";
+export type JenisBulkInsert = "lab" | "praktikan" | "asprak";
 
 export interface Koordinat {
   latitude: number;
@@ -22,14 +29,22 @@ export interface Koordinat {
   akurasiMeter?: number | null;
 }
 
-/** Dokumen `labs/{labId}` — lokasi dan radius validasi presensi. */
+/** Dokumen `labs/{labId}` — lokasi, radius, distribusi peserta/asprak, dan kebijakan denda. */
 export interface Lab {
   id?: string;
   nama: string;
   gedung?: string;
+  mataKuliah?: string;
   latitude: number;
   longitude: number;
   radiusMeter: number;
+  gracePeriodMenit?: number;
+  nominalDenda?: number;
+  aslabUids?: string[];
+  asprakUids?: string[];
+  praktikanUids?: string[];
+  dibuatPada?: Timestamp | string | null;
+  diubahPada?: Timestamp | string | null;
 }
 
 /** Dokumen `users/{uid}` — profil pengguna (Auth + peran). */
@@ -39,6 +54,7 @@ export interface ProfilUser {
   nim: string;
   email: string;
   role: Role;
+  labIds?: string[];
 }
 
 /** Dokumen `classes/{classId}`. */
@@ -80,6 +96,9 @@ export interface CatatanPresensi {
   labId?: string;
   lokasi?: Koordinat | null;
   jarakMeter?: number | null;
+  statusKetepatan?: StatusKetepatan;
+  terlambatMenit?: number | null;
+  fineId?: string | null;
 }
 
 /** Dokumen `permissions/{izinId}`. */
@@ -94,4 +113,45 @@ export interface PengajuanIzin {
   diputuskanOleh?: string | null;
   dibuatPada?: Timestamp | string | null;
   diputuskanPada?: Timestamp | string | null;
+}
+
+/** Dokumen `fines/{fineId}` — 1 tagihan denda per kejadian keterlambatan (ID = `${sessionId}_${uid}`). */
+export interface TagihanDenda {
+  id?: string;
+  uid: string;
+  sessionId: string;
+  classId: string;
+  labId: string;
+  attendancePath: string;
+  namaPraktikan: string;
+  nim: string;
+  namaPraktikum: string;
+  modul: string;
+  nominal: number;
+  terlambatMenit: number;
+  status: StatusPembayaran;
+  orderIdTerakhir?: string | null;
+  dibuatPada?: Timestamp | string | null;
+  diperbaruiPada?: Timestamp | string | null;
+  dibayarPada?: Timestamp | string | null;
+}
+
+/** Dokumen `payments/{orderId}` — jejak transaksi pembayaran Midtrans Sandbox. */
+export interface TransaksiPembayaran {
+  orderId: string;
+  fineId: string;
+  uid: string;
+  sessionId: string;
+  namaPraktikum?: string;
+  modul?: string;
+  nominal: number;
+  status: StatusPembayaran;
+  metodePembayaran?: string | null;
+  snapToken?: string | null;
+  redirectUrl?: string | null;
+  midtransTransactionId?: string | null;
+  midtransStatus?: string | null;
+  dibuatPada?: Timestamp | string | null;
+  diperbaruiPada?: Timestamp | string | null;
+  waktuTransaksi?: Timestamp | string | null;
 }

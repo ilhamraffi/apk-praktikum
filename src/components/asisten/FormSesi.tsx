@@ -5,6 +5,7 @@
 // terinisialisasi dari `awal`.
 import { useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   ScrollView,
@@ -152,11 +153,12 @@ export function FormSesi({
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onBatal}>
       <SafeAreaView style={styles.overlay}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View accessibilityViewIsModal style={styles.sheet}>
+        <KeyboardAvoidingView behavior="padding" style={styles.keyboardView}>
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View accessibilityViewIsModal style={styles.sheet}>
             <Text accessibilityRole="header" style={styles.title}>
               {awal ? "Ubah sesi" : "Tambah sesi"}
             </Text>
@@ -372,8 +374,9 @@ export function FormSesi({
             >
               <Text style={styles.cancelText}>Batal</Text>
             </Pressable>
-          </View>
-        </ScrollView>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
@@ -382,9 +385,9 @@ export function FormSesi({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: "flex-end",
     backgroundColor: warna.overlay,
   },
+  keyboardView: { flex: 1 },
   container: { flexGrow: 1, justifyContent: "flex-end" },
   sheet: {
     backgroundColor: warna.kartu,

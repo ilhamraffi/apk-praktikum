@@ -61,7 +61,8 @@
           }
         }
       ],
-      "@react-native-firebase/messaging"
+      "@react-native-firebase/messaging",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

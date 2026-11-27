@@ -1,12 +1,13 @@
 # Absensi Praktikum (HadirLab)
 
-**TL;DR** — Aplikasi mobile (React Native + Expo) untuk presensi praktikum dengan 2 peran: **Asisten** (kelola kelas & sesi → buka sesi → pantau rekap → tutup sesi → periksa izin) dan **Praktikan** (lihat jadwal → presensi → ajukan izin → pantau status).
+**TL;DR** — Aplikasi mobile (React Native + Expo) untuk presensi praktikum dengan 3 peran: **Aslab** (kelola laboratorium, bulk/single insert, perpindahan praktikan/asprak, kebijakan radius & denda, dashboard keberlangsungan & keuangan), **Asprak / Asisten** (kelola kelas & sesi tanggung jawabnya → buka sesi → pantau presensi → tutup sesi → periksa izin), dan **Praktikan** (lihat jadwal → presensi berbasis lokasi → ajukan izin → bayar denda keterlambatan via Midtrans Sandbox → pantau riwayat).
 
 | Sprint | Fokus | Status |
 |---|---|---|
 | Sprint 1 | UI saja: data dummy lokal, state React | Selesai (arsip di bagian bawah) |
 | Sprint 2 | Data dinamis: Firebase Auth + Cloud Firestore + klasifikasi izin oleh AI | Selesai (arsip di bagian bawah) |
-| **Sprint 3** | **Location-Based Attendance, Maps, and Push Notification** | **Berjalan** |
+| Sprint 3 | Location-Based Attendance, Maps, and Push Notification | Selesai (arsip di bagian bawah) |
+| **Sprint 4** | **Manajemen Lab (Aslab), Sistem Denda Keterlambatan, Midtrans Sandbox, dan Finalisasi UI** | **Berjalan** |
 
 # Konfigurasi Setup Project
 Anggota :
@@ -33,7 +34,242 @@ eas build --profile development --platform android
 firebase deploy --only functions
 ```
 
-# SPRINT 3 - Location-Based Attendance, Maps, and Push Notification
+# SPRINT 4 - Manajemen Laboratorium (Aslab), Denda Keterlambatan, Pembayaran Midtrans Sandbox, dan Finalisasi UI
+
+Dokumen sprint · apk-praktikum · melanjutkan Sprint 3 (Presensi Lokasi, Peta, dan Push Notification) · **PM Sprint 4: Fauzan**
+
+## 1. Tujuan
+
+Menyempurnakan aplikasi HadirLab dengan pemisahan peran **Aslab** (manajemen laboratorium, distribusi praktikan & asprak, kebijakan radius serta batas keterlambatan, dan dashboard keberlangsungan + keuangan) dan **Asprak** (fokus pada pelaksanaan sesi praktikum tanggung jawabnya). Menambahkan mekanisme perhitungan keterlambatan (*grace period*) dan denda nominal tetap, integrasi **Payment Gateway Midtrans Sandbox** berbasis alur *client–server–gateway* dengan verifikasi webhook di backend, notifikasi serta riwayat pembayaran, dan finalisasi antarmuka agar modern, konsisten, dan mudah digunakan oleh seluruh peran.
+
+## 2. Alur demo (acceptance Sprint 4)
+
+**Alur A — Manajemen Laboratorium, Bulk Insert Terpisah, & Perpindahan (Aslab)**
+
+1. Aslab login → membuka menu manajemen laboratorium.
+2. Aslab mengunduh file template CSV untuk masing-masing opsi bulk insert (terpisah: lab per mata kuliah, praktikan ke lab, asprak ke lab).
+3. Aslab melakukan bulk insert (atau single insert) → tiap baris tampil dalam daftar `ScrollView` interaktif untuk ditinjau (*accept/deny*, ubah nilai, dan lengkapi kolom kosong) sebelum disimpan ke Firestore.
+4. Aslab mengatur cakupan lokasi/radius presensi, batas keterlambatan (*grace period*), serta nominal denda tetap pada laboratorium.
+5. Aslab memindahkan praktikan maupun aslab/asprak antar laboratorium (tanpa perpindahan jadwal praktikum).
+
+**Alur B — Dashboard Keberlangsungan Lab (Aslab) & Pengelolaan Sesi Terfokus (Asprak)**
+
+1. Aslab membuka Dashboard → melihat jumlah lab & praktikan, status kegiatan tiap lab, lokasi & waktu pelaksanaan, jadwal berlangsung & akan datang, riwayat kegiatan lab, serta riwayat keuangan denda praktikum.
+2. Aslab mengubah filter **Hari / Minggu / Bulan** → data dashboard dan ringkasan keuangan berubah mengikuti data Firestore.
+3. Asprak login (perangkat lain) → hanya melihat kelas, jadwal, dan sesi tanggung jawabnya (tidak dapat mengakses distribusi praktikan maupun konfigurasi seluruh lab).
+4. Asprak membuka sesi → memantau & mengelola presensi praktikan → menutup sesi, dan perubahan status langsung tersinkronisasi real-time di perangkat praktikan.
+
+**Alur C — Keterlambatan (*Grace Period*), Denda Otomatis, & Pengecualian Izin**
+
+1. Asprak membuka sesi dengan jam mulai dan toleransi keterlambatan (*grace period*) yang telah dikonfigurasi.
+2. Praktikan A presensi sebelum atau tepat pada akhir *grace period* → tercatat **Tepat waktu** tanpa tagihan denda.
+3. Praktikan B presensi setelah melewati *grace period* → tercatat **Hadir (Terlambat)** dan sistem otomatis membuat **tepat satu tagihan denda** bernominal tetap (terhubung ke praktikan, sesi, dan catatan presensi) serta mengirim push notification tagihan baru.
+4. Praktikan C mengajukan izin dan disetujui Asprak → tercatat sebagai **tidak hadir dengan izin (*excused absence*)**, dibebaskan dari denda keterlambatan, dan status kehadiran tidak berubah menjadi Hadir.
+
+**Alur D — Pembayaran Midtrans Sandbox, Webhook, Notifikasi, & Riwayat Pembayaran**
+
+1. Praktikan B membuka halaman Tagihan Denda → melihat rincian nominal dan menekan **Bayar**.
+2. Aplikasi memanggil backend untuk membuat transaksi Midtrans Snap Sandbox (tanpa menyimpan secret key di aplikasi) lalu membuka halaman pembayaran Midtrans.
+3. Praktikan menyelesaikan pembayaran di Midtrans Sandbox → Midtrans mengirim callback/webhook ke backend → backend memverifikasi signature dan memperbarui status tagihan menjadi `success` (atau `failed`/`pending` sesuai hasil verifikasi).
+4. Praktikan menerima push notification hasil pembayaran; status kehadiran praktikan **tetap tidak berubah** setelah denda dibayar.
+5. Praktikan menutup dan membuka ulang aplikasi → transaksi tetap tampil lengkap pada halaman **Riwayat Pembayaran** (sesi, tanggal tagihan, nominal, waktu transaksi, status) dan masuk ke riwayat keuangan Dashboard Aslab.
+
+## 3. Requirement (acceptance criteria)
+
+Penomoran melanjutkan Sprint 3 (SRS-01 s.d. SRS-16).
+
+| ID | Requirement | Kriteria selesai | Owner |
+| --- | --- | --- | --- |
+| SRS-17 | Peran baru `ASLAB` & pembatasan wewenang `ASPRAK` | Peran `ASLAB` tersedia di profil, pemilih peran, dan penjaga rute; `ASISTEN` (Asprak) dibatasi hanya pada pelaksanaan sesi tanggung jawabnya dan tidak dapat mengakses konfigurasi seluruh laboratorium maupun distribusi praktikan | PM (kontrak `Role`, `AuthContext`, Security Rules), Ilham (halaman pilih peran & routing ruang Aslab) |
+| SRS-18 | Manajemen laboratorium, 3 bulk/single insert terpisah, template, & perpindahan | Aslab mengelola data lab (nama, lokasi, koordinat, radius validasi presensi, batas keterlambatan, nominal denda); **3 opsi bulk/single insert terpisah** (lab per 1 mata kuliah, praktikan ke lab, asprak ke lab) lengkap dengan **template file yang dapat diunduh**; setiap baris bulk tampil dalam **list `ScrollView`** yang dapat di-*accept/deny*, diperbarui, dan dilengkapi kolom kosongnya sebelum disimpan; perpindahan praktikan dan aslab/asprak antar lab tersedia tanpa perpindahan jadwal | Ilham (UI, parser CSV, preview `ScrollView`, perpindahan), PM (kontrak data, helper template, paket native & build) |
+| SRS-19 | Dashboard keberlangsungan laboratorium (Aslab) | Dashboard Aslab menampilkan jumlah lab & praktikan, status kegiatan tiap lab, informasi lokasi & waktu pelaksanaan, jadwal berlangsung & akan datang, riwayat kegiatan lab, dan riwayat keuangan hasil denda praktikum; mendukung filter **hari, minggu, dan bulan** dari data Firestore real-time | Rajib |
+| SRS-20 | Pengelolaan sesi oleh Asprak | Asprak melihat daftar kelas, jadwal, dan sesi tanggung jawabnya; dapat membuka sesi, memantau & mengelola presensi (termasuk status tepat waktu/terlambat & *excused absence*), dan menutup sesi dengan sinkronisasi real-time ke praktikan; tidak punya akses distribusi praktikan maupun konfigurasi seluruh lab | Rajib |
+| SRS-21 | Perhitungan keterlambatan (*grace period*) & pengelolaan denda | Keterlambatan dihitung dari waktu presensi terhadap `mulai + gracePeriodMenit` (tepat pada batas = tepat waktu, lewat batas = terlambat); durasi toleransi dapat dikonfigurasi; denda bernominal tetap per kejadian; **1 kejadian keterlambatan = tepat 1 tagihan** yang terhubung ke praktikan, sesi, dan presensi; bayar denda tidak mengubah status kehadiran; izin disetujui Asprak dicatat sebagai *excused absence*, bebas denda, dan tidak mengubah kehadiran menjadi Hadir | PM (perhitungan atomik di backend, pembuatan tagihan idempoten, aturan izin bebas denda), Ilham (input kebijakan toleransi & nominal denda di form lab) |
+| SRS-22 | Integrasi Payment Gateway (Midtrans Sandbox) | Praktikan melihat daftar & rincian tagihan; transaksi dibuat lewat backend (secret key **tidak** di aplikasi RN); diarahkan ke halaman pembayaran Midtrans Snap Sandbox; status `pending` / `success` / `failed` hanya diperbarui berdasarkan verifikasi callback/webhook valid di backend | PM (endpoint transaksi Midtrans & webhook verifier di backend), Farhan (layar tagihan, tombol bayar, WebBrowser/Snap, pantau status real-time) |
+| SRS-23 | Notifikasi denda & riwayat pembayaran | Praktikan menerima push notification saat tagihan denda baru dibuat, pembayaran berhasil, dan pembayaran gagal/butuh penyelesaian; mengetuk notifikasi membuka layar tagihan/riwayat; halaman Riwayat Pembayaran menampilkan sesi, tanggal tagihan, nominal, waktu transaksi, dan status secara persisten setelah app ditutup & dibuka ulang | PM (trigger FCM denda & pembayaran di backend), Farhan (halaman riwayat pembayaran & penanganan rute notifikasi di aplikasi) |
+| SRS-24 | Finalisasi UI, keamanan, & integrasi menyeluruh | Tampilan modern, konsisten dengan token `src/theme.ts`, responsif di semua peran (`ASLAB`, `ASISTEN`/Asprak, `PRAKTIKAN`); fitur Sprint 1–3 tetap berfungsi; Security Rules diperketat untuk `ASLAB`, `fines`, dan `payments`; tidak ada secret key di client | PM (Security Rules, QA 4 alur demo, APK akhir), semua (finalisasi UI layar masing-masing) |
+
+Kondisi yang wajib ditangani (melanjutkan kondisi Sprint 2 & Sprint 3):
+
+| Kondisi | Perilaku yang diharapkan |
+| --- | --- |
+| File bulk kosong / format salah / kolom tidak lengkap | Pesan kesalahan jelas; baris bermasalah ditandai di preview `ScrollView` agar bisa diedit, dilengkapi, atau di-*deny* sebelum disimpan |
+| Duplikat data saat bulk insert atau pindah lab | Deteksi dan cegah duplikasi (praktikan/asprak tidak terdaftar ganda pada lab yang sama) |
+| Keterlambatan dipicu ulang (retry presensi) | Tetap menghasilkan maksimal 1 tagihan per kejadian (idempoten berdasarkan `${sessionId}_${uid}`) |
+| Pembayaran ditinggalkan / ditutup sebelum selesai | Status tetap `pending` sampai webhook Midtrans mengonfirmasi `success` atau `failed`/`expired`; praktikan bisa melanjutkan atau membuat transaksi ulang jika kedaluwarsa |
+| Webhook Midtrans duplikat / signature tidak valid | Signature tidak valid ditolak (`403`); webhook duplikat bersifat idempoten tanpa membuat catatan ganda atau mengubah status kehadiran |
+| Pembayaran gagal / koneksi terganggu | Pesan jelas + tombol coba lagi; status tagihan tidak berubah menjadi `success` dari sisi client |
+| Akses tidak berwenang (Asprak ke fitur Aslab / Praktikan ke tagihan orang lain) | Diblokir di navigasi UI sekaligus ditolak oleh Firestore Security Rules |
+
+## 4. Teknologi
+
+- Melanjutkan Sprint 3: Expo SDK 58, React Native, Expo Router, TypeScript, Firebase Auth, Cloud Firestore, FCM (`@react-native-firebase/messaging`), `expo-location`, OpenStreetMap tiles, EAS Build.
+- **Template & Bulk Insert CSV:** `expo-document-picker` (pilih file CSV), `expo-file-system`, dan `expo-sharing` (unduh/bagikan template CSV) — paket native baru → **wajib masuk build ulang Fase 0** oleh PM.
+- **Payment Gateway:** **Midtrans Snap Sandbox** (lingkungan uji tanpa uang asli). Di aplikasi membuka URL pembayaran Snap melalui `expo-web-browser` (sudah terpasang di `package.json`).
+- **Backend Transaksi, Webhook, & Denda:** endpoint HTTPS yang memegang `MIDTRANS_SERVER_KEY` dan Firebase Admin SDK (lihat §13 mengenai pilihan hosting Cloud Functions Blaze vs server Node.js/Express gratis).
+
+## 5. Konfigurasi Lanjutan: Peran, Bulk Insert, Keterlambatan/Denda, Midtrans, & Notifikasi
+
+**Pemetaan 3 Peran (kompatibel dengan data Sprint 2–3).**
+- `ASLAB`: peran baru pengelola laboratorium, bulk insert, perpindahan praktikan/asprak, kebijakan lokasi & keterlambatan, dan dashboard keberlangsungan + keuangan.
+- `ASISTEN` (ditampilkan di UI sebagai **Asprak**): difokuskan pada pengelolaan kelas, jadwal, sesi tanggung jawabnya, presensi, dan pemeriksaan izin. Nama enum `ASISTEN` dipertahankan agar akun & dokumen Sprint 2–3 tidak rusak.
+- `PRAKTIKAN`: jadwal, presensi lokasi, izin, tagihan denda, pembayaran Midtrans, dan riwayat pembayaran.
+
+**3 Bulk Insert Terpisah & Template CSV.**
+Ketiga bulk insert **wajib dipisah** (bukan satu file/halaman gabungan):
+1. **Bulk Lab (per 1 mata kuliah):** Aslab memilih/mengisi 1 mata kuliah, lalu mengimpor daftar lab (`nama, gedung, latitude, longitude, radiusMeter, gracePeriodMenit, nominalDenda`).
+2. **Bulk Praktikan ke Lab tertentu:** Aslab memilih 1 lab tujuan, lalu mengimpor daftar praktikan (`nim, nama, email`).
+3. **Bulk Asprak ke Lab tertentu:** Aslab memilih 1 lab tujuan, lalu mengimpor daftar asprak (`nim, nama, email`).
+
+Setiap mode menyediakan tombol **Unduh Template CSV** dan **Single Insert**. Setelah file CSV dipilih, tiap baris berubah menjadi kartu/baris di dalam **`ScrollView` interaktif** tempat Aslab bisa memilih **Accept / Deny**, mengubah isi, dan melengkapi field yang masih kosong sebelum menekan **Simpan yang diterima**. Perpindahan hanya berlaku untuk **praktikan** dan **aslab/asprak** antar laboratorium (tidak memindahkan jadwal praktikum).
+
+**Perhitungan Keterlambatan (*Grace Period*) & Denda.**
+- Batas tepat waktu: `batasTepatWaktu = sesi.mulai + (lab.gracePeriodMenit * 60_000)`.
+- `waktuPresensi <= batasTepatWaktu` → `statusKetepatan: "TEPAT_WAKTU"`, tanpa denda.
+- `waktuPresensi > batasTepatWaktu` → `statusKetepatan: "TERLAMBAT"`, `terlambatMenit = ceil((waktuPresensi - batasTepatWaktu) / 60_000)` → sistem membuat 1 dokumen `fines/{sessionId}_{uid}` dengan nominal tetap `lab.nominalDenda`.
+- Pembayaran denda hanya mengubah status pada `fines` dan `payments`, **tidak mengubah** `statusKehadiran` pada `attendance`.
+- Izin yang disetujui Asprak (`permissions.status == "approved"`) dicatat sebagai *excused absence* (tidak hadir dengan izin), **bebas denda keterlambatan**, dan **tidak mengubah** catatan kehadiran menjadi `"Hadir"`.
+
+**Integrasi Midtrans Sandbox (Alur Client–Server–Gateway).**
+1. Praktikan menekan **Bayar** → aplikasi memanggil endpoint backend `buatTransaksiDenda(fineId)` dengan Firebase ID Token.
+2. Backend memverifikasi kepemilikan tagihan & status belum lunas, memanggil Midtrans Snap API Sandbox memakai `MIDTRANS_SERVER_KEY` (env server), menyimpan dokumen `payments/{orderId}` berstatus `pending`, lalu mengembalikan `redirectUrl` ke aplikasi.
+3. Aplikasi membuka `redirectUrl` via `expo-web-browser`.
+4. Setelah pembayaran diproses di Midtrans Sandbox, Midtrans mengirim HTTP POST ke endpoint **Webhook backend** (`midtransWebhook`).
+5. Backend memvalidasi `signature_key = SHA512(order_id + status_code + gross_amount + MIDTRANS_SERVER_KEY)`, memetakan status Midtrans (`settlement`/`capture` → `success`; `pending` → `pending`; `deny`/`cancel`/`expire`/`failure` → `failed`), memperbarui `payments/{orderId}` & `fines/{fineId}` secara atomik, dan mengirim push notification ke praktikan.
+
+**Notifikasi Tambahan Sprint 4 (melanjutkan tabel Sprint 3).**
+
+| Peristiwa | Terdeteksi dari | Penerima | Contoh isi |
+| --- | --- | --- | --- |
+| Tagihan denda dibuat | `fines/{fineId}` dibuat saat presensi terlambat | Praktikan terkait (`uid`) | *Tagihan denda keterlambatan {namaPraktikum}: Rp{nominal}.* |
+| Pembayaran berhasil | Webhook Midtrans mengubah status menjadi `success` | Praktikan terkait (`uid`) | *Pembayaran denda {namaPraktikum} sebesar Rp{nominal} berhasil.* |
+| Pembayaran gagal / butuh penyelesaian | Webhook Midtrans mengubah status menjadi `failed` (atau kedaluwarsa) | Praktikan terkait (`uid`) | *Pembayaran denda {namaPraktikum} belum berhasil. Silakan coba bayar ulang.* |
+
+## 6. Struktur & kepemilikan (dibekukan PM di Fase 0)
+
+Menambah di atas struktur Sprint 3; satu folder/file = satu pemilik. Perubahan di area orang lain lewat PM atau issue.
+
+```
+src/app/aslab/_layout.tsx                    [Ilham] navigasi khusus peran Aslab
+src/app/aslab/lab/                           [Ilham] kelola lab, radius, grace period, nominal denda
+src/app/aslab/bulk/                          [Ilham] 3 layar bulk/single insert terpisah + template + preview ScrollView
+src/app/aslab/perpindahan.tsx                [Ilham] pindah praktikan & aslab/asprak antar lab
+src/app/pilih-peran.tsx                      [Ilham] pemilih peran mendukung ASLAB, ASPRAK (ASISTEN), PRAKTIKAN
+src/components/aslab/                        [Ilham] kartu preview bulk, form kebijakan lab, form perpindahan
+src/app/aslab/index.tsx                      [Rajib] dashboard keberlangsungan lab & keuangan + filter hari/minggu/bulan
+src/hooks/useDashboardAslab.ts               [Rajib] agregasi real-time lab, sesi, riwayat kegiatan, & keuangan denda
+src/app/asisten/ (index, kelas, [sesiId])    [Rajib] fokus ruang Asprak: hanya kelas/sesi tanggung jawabnya, tanpa kelola seluruh lab
+src/components/asisten/RekapPresensi.tsx     [Rajib] tampilan status tepat waktu / terlambat / excused absence
+src/app/praktikan/denda/                     [Farhan] daftar tagihan denda & alur bayar Midtrans Sandbox
+src/app/praktikan/pembayaran.tsx             [Farhan] halaman riwayat pembayaran persisten
+src/app/praktikan/_layout.tsx                [Farhan] akses navigasi Denda & Riwayat Pembayaran praktikan
+src/hooks/useTagihanPraktikan.ts             [Farhan] listener real-time tagihan (`fines`) & riwayat (`payments`)
+src/components/praktikan/KartuTagihan.tsx    [Farhan] komponen kartu tagihan & riwayat pembayaran
+src/app/_layout.tsx, src/utils/aktivitasLab.ts [Farhan] tambah rute notifikasi denda/pembayaran & guard rute `/aslab`
+src/types/index.ts                           [PM] + Role `ASLAB`, tipe `TagihanDenda`, `TransaksiPembayaran`, bidang baru `Lab`/`CatatanPresensi`
+src/lib/denda.ts                             [PM] helper hitung keterlambatan (*grace period*) & format rupiah
+src/lib/pembayaran.ts                        [PM] client pemanggil endpoint backend `buatTransaksiDenda`
+src/lib/templateBulk.ts                      [PM] generator isi CSV & parser dasar template 3 bulk insert
+functions/ (atau backend/)                   [PM] validasi presensi + hitung keterlambatan/denda, transaksi Midtrans, webhook verifier, trigger FCM
+firestore.rules, app.json                    [PM] Security Rules Sprint 4, paket native Fase 0, build APK bersama
+```
+
+## 7. Skema Firestore (usulan awal; perubahan hanya lewat PM)
+
+| Koleksi / dokumen | Isi utama |
+| --- | --- |
+| `users/{uid}` (diubah) | `role` menjadi `"ASLAB" \| "ASISTEN" \| "PRAKTIKAN"`; tambah opsional `labIds?: string[]` |
+| `labs/{labId}` (diubah) | tambah `mataKuliah`, `aslabUids[]`, `asprakUids[]`, `praktikanUids[]`, `gracePeriodMenit` (default mis. 15), `nominalDenda` (nominal tetap, mis. 5000) |
+| `sessions/{sessionId}/attendance/{uid}` (diubah) | tambah `statusKetepatan` (`"TEPAT_WAKTU" \| "TERLAMBAT"`), `terlambatMenit`, `fineId?: string \| null` |
+| `fines/{fineId}` (baru, ID = `${sessionId}_${uid}`) | `uid`, `sessionId`, `classId`, `labId`, `attendancePath`, `namaPraktikan`, `nim`, `namaPraktikum`, `modul`, `nominal`, `terlambatMenit`, `status` (`"pending" \| "success" \| "failed"`), `orderIdTerakhir`, `dibuatPada`, `diperbaruiPada`, `dibayarPada` |
+| `payments/{orderId}` (baru) | `orderId`, `fineId`, `uid`, `sessionId`, `nominal`, `status` (`"pending" \| "success" \| "failed"`), `metodePembayaran`, `redirectUrl`, `midtransTransactionId`, `midtransStatus`, `dibuatPada`, `diperbaruiPada`, `waktuTransaksi` |
+| `classes`, `sessions`, `permissions`, `fcmTokens` | melanjutkan Sprint 3; `classes`/`sessions` tetap membawa `asistenUid` dan `labId` untuk filter ruang Asprak |
+
+Alasan desain:
+- ID tagihan `fines/{sessionId}_{uid}` bersifat deterministik → secara alami menjamin **satu kejadian keterlambatan hanya menghasilkan satu tagihan** tanpa duplikasi.
+- `payments/{orderId}` dipisah dari `fines/{fineId}` agar praktikan yang pembayarannya gagal/kedaluwarsa dapat mencoba bayar ulang (menghasilkan `orderId` baru) sementara seluruh jejak transaksi tetap tercatat rapi di **Riwayat Pembayaran**.
+- Hanya backend (Admin SDK) yang boleh menulis `fines` dan `payments`; client hanya membaca tagihan/riwayat miliknya sendiri (dan Aslab membaca ringkasan keuangan untuk dashboard).
+
+## 8. Pembagian kerja
+
+**Fauzan (PM)** — Fondasi, arsitektur, backend, & kualitas: kontrak data `src/types/index.ts`, paket native Fase 0 (`expo-document-picker`, `expo-file-system`, `expo-sharing`) + build APK baru bersama; helper bersama (`src/lib/denda.ts`, `src/lib/pembayaran.ts`, `src/lib/templateBulk.ts`); backend perhitungan keterlambatan & pembuatan denda atomik, integrasi Midtrans Snap Sandbox (create transaction + webhook verifikasi SHA-512), dan trigger push notification denda/pembayaran; Security Rules Sprint 4 (`ASLAB`/`ASISTEN`/`PRAKTIKAN`/`fines`/`payments`); data awal akun uji 3 peran & lab contoh; review seluruh PR, QA 4 alur demo di perangkat nyata, README & APK final. *PM tidak menulis kode fitur layar.*
+
+**Ilham (Raffi) — Manajemen Laboratorium Aslab & Bulk/Perpindahan** · SRS-17 (pilih peran/layout Aslab), SRS-18
+Ruang navigasi Aslab (`src/app/aslab/_layout.tsx`), pembaruan pemilih peran (`ASLAB`, `ASPRAK`, `PRAKTIKAN`), manajemen laboratorium (nama, lokasi, koordinat, cakupan radius presensi, batas keterlambatan *grace period*, nominal denda tetap), **3 fitur bulk/single insert terpisah** (lab per mata kuliah, praktikan ke lab, asprak ke lab) dengan tombol **unduh template CSV** dan **preview `ScrollView` interaktif** (*accept/deny*, edit, lengkapi kolom kosong), serta fitur **perpindahan praktikan dan aslab/asprak** antar lab tanpa memindahkan jadwal.
+
+**Rajib (Ichan) — Dashboard Keberlangsungan Lab (Aslab) & Pengelolaan Sesi Asprak** · SRS-19, SRS-20
+Dashboard Aslab (`src/app/aslab/index.tsx` & `useDashboardAslab.ts`) berisi jumlah lab & praktikan, status kegiatan tiap lab, lokasi & waktu pelaksanaan, jadwal berlangsung & akan datang, riwayat kegiatan lab, riwayat keuangan hasil denda praktikum, dan **filter hari/minggu/bulan** dari data Firestore real-time; serta pemfokusan ruang **Asprak** (`src/app/asisten/`) agar hanya menampilkan kelas/jadwal/sesi tanggung jawabnya, mengelola buka/tutup sesi & pantau presensi (termasuk indikator tepat waktu/terlambat/*excused absence*), dan menyembunyikan/memblokir akses kelola seluruh lab & distribusi praktikan.
+
+**Farhan — Pembayaran Midtrans (Praktikan), Riwayat Pembayaran, & Notifikasi** · SRS-22 (layar), SRS-23 (aplikasi)
+Halaman daftar & rincian tagihan denda praktikan (`src/app/praktikan/denda/`), alur pembayaran ke Midtrans Snap Sandbox melalui `buatTransaksiDenda` + `expo-web-browser`, tampilan status `pending`/`success`/`failed` secara real-time mengikuti hasil webhook backend, halaman **Riwayat Pembayaran** persisten (`src/app/praktikan/pembayaran.tsx`), integrasi notifikasi tagihan/pembayaran & navigasi ketuk notifikasi di `src/app/_layout.tsx` serta `src/utils/aktivitasLab.ts`, dan pembaruan penjaga rute `/aslab`.
+
+### Kontrak antar-slice (dibekukan PM di Fase 0)
+
+- `useAuth()` tetap mempertahankan bentuk Sprint 3, dengan `role: "ASLAB" | "ASISTEN" | "PRAKTIKAN" | null`.
+- `hitungKeterlambatan(waktuPresensi, waktuMulai, gracePeriodMenit)` di `src/lib/denda.ts` → `{ terlambat: boolean; terlambatMenit: number }` (untuk pratinjau/tampilan; penetapan resmi & pembuatan tagihan tetap di backend).
+- `buatTransaksiDenda(fineId)` di `src/lib/pembayaran.ts` → `{ orderId, redirectUrl, status }` (satu-satunya pintu membuat transaksi Midtrans; aplikasi tidak boleh memanggil Midtrans API langsung atau menyimpan Server Key).
+- `buatTemplateCsv(jenis)` & `parseCsvBulk(jenis, teks)` di `src/lib/templateBulk.ts` untuk `jenis: "lab" | "praktikan" | "asprak"`.
+- Tipe & nama koleksi hanya dari `src/types/index.ts`; semua warna & radius dari `src/theme.ts` (tidak ada kode warna hardcoded).
+
+## 9. Urutan kerja
+
+| Fase | PM (Fauzan) | Ilham | Rajib | Farhan |
+| --- | --- | --- | --- | --- |
+| 0 | Finalisasi README, kontrak `src/types/index.ts`, helper `denda.ts` / `pembayaran.ts` / `templateBulk.ts`, pasang paket CSV + build APK baru, akun & data uji 3 peran, putuskan hosting backend Midtrans | Pasang APK baru, cek role `ASLAB` & paket file/template | Pasang APK baru, cek data lab/sesi/denda contoh | Pasang APK baru, cek `expo-web-browser` & notifikasi |
+| 1 (paralel) | Implementasi backend: hitung keterlambatan & buat `fines`, endpoint `buatTransaksiDenda` (Midtrans Snap Sandbox), & `midtransWebhook` (verifikasi SHA-512) | Layout Aslab, pilih peran `ASLAB`, form lab (+ radius, *grace period*, nominal denda), & 3 bulk/single insert terpisah + template | Dashboard Aslab (ringkasan lab, praktikan, jadwal, kegiatan, keuangan) + filter hari/minggu/bulan | Halaman daftar tagihan denda & riwayat pembayaran (membaca Firestore real-time) |
+| 2 | Trigger FCM denda/pembayaran, perketat Security Rules Sprint 4 (`ASLAB`, `fines`, `payments`), deploy & uji webhook Midtrans Sandbox | Preview `ScrollView` interaktif (accept/deny/edit/isi kosong) & perpindahan praktikan/aslab/asprak antar lab | Fokuskan ruang Asprak (filter tanggung jawab, blokir kelola lab/distribusi, tampilan tepat waktu/terlambat/izin) | Hubungkan tombol bayar ke `buatTransaksiDenda` + Midtrans Snap, status real-time, & rute ketuk notifikasi |
+| 3 | QA 4 alur demo di perangkat nyata, audit keamanan (Rules + nol secret key di client), finalisasi konsistensi UI, APK akhir | Bugfix & polish UI | Bugfix & polish UI | Bugfix & polish UI |
+
+Integrasi ke `main` dilakukan berkala lewat Pull Request. Fase 0 harus merge lebih dulu agar semua anggota memakai kontrak data dan APK yang sama.
+
+## 10. Aturan Git
+
+- Satu fitur satu branch:
+  - `feat/sprint4-fondasi-pm` (Fauzan / PM)
+  - `feat/aslab-manajemen-lab` (Ilham)
+  - `feat/aslab-dashboard-asprak` (Rajib)
+  - `feat/pembayaran-midtrans` (Farhan)
+- `git pull --rebase origin main` sebelum push; jangan push langsung ke `main`; PR wajib direview minimal 1 orang dan disetujui PM.
+- **Dilarang keras** commit `MIDTRANS_SERVER_KEY`, `.env`, keystore, atau file service account Firebase. Simpan seluruh kredensial hanya di environment variable server/backend.
+
+## 11. Skenario uji (PM)
+
+Empat alur demo (§2) dengan perangkat nyata (minimal 2 HP), ditambah kasus tepi:
+
+- **Aslab & Bulk Insert:** unduh ketiga template CSV terpisah; unggah CSV dengan baris kosong/salah → perbaiki sebagian & *deny* sebagian di `ScrollView` → hanya baris *accept* yang tersimpan; pindah praktikan & aslab/asprak antar lab tanpa mengubah jadwal; cek akun Asprak mencoba membuka halaman Aslab atau menulis `labs` (wajib ditolak).
+- **Dashboard Aslab & Asprak:** ganti filter hari/minggu/bulan; cek jumlah lab, praktikan, status sesi, riwayat kegiatan, dan total denda lunas/pending berubah real-time; cek Asprak hanya melihat kelas/sesi tanggung jawabnya.
+- **Keterlambatan & Izin:** presensi tepat di detik akhir *grace period* (harus tepat waktu, tanpa denda); presensi lewat 1 menit (terlambat → tepat 1 tagihan denda); presensi ulang/retry (tidak membuat tagihan kedua); izin disetujui Asprak (*excused absence*, tidak menjadi Hadir, bebas denda).
+- **Midtrans Sandbox & Keamanan:** pembayaran sukses (`settlement` via simulator Midtrans Sandbox) → tagihan berubah `success`, kehadiran **tidak berubah**, masuk riwayat pembayaran & keuangan Aslab; pembayaran gagal/kedaluwarsa → status `failed` dan bisa bayar ulang; tutup & buka ulang app → riwayat pembayaran tetap ada; kirim webhook palsu dengan signature salah → ditolak backend; cek bundle/kode client tidak mengandung `MIDTRANS_SERVER_KEY`.
+- **Notifikasi:** praktikan menerima notifikasi saat tagihan dibuat, bayar berhasil, dan bayar gagal (foreground, background, quit) → ketuk notifikasi membuka layar tagihan/riwayat.
+- **Regresi:** fitur Sprint 1–3 (login, presensi lokasi, peta lab, izin AI, rekap) tetap berjalan tanpa crash.
+
+## 12. Definition of Done
+
+Memenuhi seluruh kriteria SRS-17 s.d. SRS-24 • empat alur demo berjalan di perangkat nyata • fitur Sprint 1–3 tetap berfungsi • tampilan konsisten & modern di seluruh peran • tidak ada crash dan tidak ada secret key di client • verifikasi pembayaran hanya lewat webhook backend • lolos review 1 orang lain • merge ke `main` via PR • lulus QA PM di perangkat nyata.
+
+## 13. Catatan teknis & keputusan terbuka
+
+- **Perubahan penting dari Sprint 3:** peran bertambah dari 2 menjadi 3 (`ASLAB`, `ASISTEN`/Asprak, `PRAKTIKAN`); pengelolaan laboratorium & distribusi praktikan dipindahkan dari Asprak ke Aslab; presensi kini mencatat status ketepatan waktu dan otomatis menghasilkan tagihan denda bila terlambat; ditambahkan integrasi Midtrans Sandbox + riwayat pembayaran.
+- **Perbaikan UX Sprint 3 yang ikut dibundel PM:** menambahkan `KeyboardAvoidingView` pada modal `FormKelas`, `FormLab`, dan `FormSesi` agar input (seperti radius lab & kode kelas) tidak tertutup keyboard di Android.
+- **Hosting Backend (Midtrans, Webhook, Denda, & FCM) — Keputusan Fase 0 PM:** dipilih **Opsi (b) — Vercel Serverless Functions (`backend/`)** agar 100% gratis tanpa kartu kredit dan tidak terblokir paket Spark Firebase (seluruh tim tidak perlu menunggu upgrade Blaze).
+  - Endpoint tersedia di folder `backend/`: `/api/presensi/catat`, `/api/pembayaran/buat`, `/api/midtrans/webhook`, dan `/api/notifikasi/kirim`.
+  - Secret key (`MIDTRANS_SERVER_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`) hanya disimpan di **Vercel Environment Variables** (lihat `backend/README.md`).
+  - Setiap anggota cukup menambahkan `EXPO_PUBLIC_BACKEND_URL=https://<domain-vercel>` pada `.env.local` (lihat `.env.example`).
+- **Akun Midtrans Sandbox & Webhook URL:** dibuat oleh PM di dashboard Midtrans Sandbox (Payment Notification URL diarahkan ke `https://<domain-vercel>/api/midtrans/webhook`). *Status setup:* akun Midtrans Sandbox dibuat, menunggu deploy URL Vercel & pengisian env.
+- **Nilai default kebijakan keterlambatan (Fase 0 PM):** *grace period* default = `15` menit, nominal denda default = `Rp5.000` (dapat diubah Aslab per laboratorium).
+- **Paket native Fase 0 & Build development bersama:** `expo-document-picker`, `expo-file-system`, dan `expo-sharing` sudah dipasang di `package.json` (`app.json` otomatis menambahkan plugin `expo-sharing`). Setelah PR Fase 0 di-merge, PM membuat 1 APK development build bersama dan menyimpannya di Google Drive.
+- **Status implementasi Fase 0 PM:** kontrak data (`src/types/index.ts`), helper bersama (`src/lib/denda.ts`, `src/lib/pembayaran.ts`, `src/lib/templateBulk.ts`, `src/lib/backend.ts`, update `src/lib/presensi.ts`), `firestore.rules` Sprint 4, paket CSV native, dan backend Vercel (`backend/`) sudah tersedia beserta unit test. Layar fitur masing-masing peran siap dikerjakan paralel oleh Ilham, Rajib, dan Farhan.
+
+## 14. Referensi materi
+
+- Midtrans Snap Sandbox & API: https://docs.midtrans.com/docs/snap-snap-integration-guide
+- Midtrans HTTP Webhook Notification & Signature Verification: https://docs.midtrans.com/docs/https-notification-webhooks
+- Midtrans Sandbox Payment Simulator: https://simulator.sandbox.midtrans.com/
+- Expo DocumentPicker, FileSystem, Sharing, WebBrowser: https://docs.expo.dev/versions/v58.0.0/
+
+---
+
+# (ARSIP) SPRINT 3 - Location-Based Attendance, Maps, and Push Notification
 
 Dokumen sprint · apk-praktikum · melanjutkan Sprint 2 (Auth + Firestore + klasifikasi izin)
 
