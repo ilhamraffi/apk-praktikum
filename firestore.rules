@@ -9,8 +9,16 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    function isAslab() {
+      return signedIn() && profile().role == 'ASLAB';
+    }
+
     function isAsisten() {
       return signedIn() && profile().role == 'ASISTEN';
+    }
+
+    function isPengelola() {
+      return isAslab() || isAsisten();
     }
 
     function isPraktikan() {
@@ -23,6 +31,15 @@ service cloud.firestore {
         && value.size() <= maximum;
     }
 
+    function sessionClassId(sessionId) {
+      return get(/databases/$(database)/documents/sessions/$(sessionId)).data.classId;
+    }
+
+    function isPesertaKelas(classId) {
+      return request.auth.uid in
+        get(/databases/$(database)/documents/classes/$(classId)).data.pesertaUids;
+    }
+
     match /users/{uid} {
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
@@ -31,9 +48,9 @@ service cloud.firestore {
         && validText(request.resource.data.nim, 1, 40)
         && validText(request.resource.data.email, 3, 254)
         && request.resource.data.role == 'PRAKTIKAN';
-      allow read: if signedIn() && (request.auth.uid == uid || isAsisten());
+      allow read: if signedIn() && (request.auth.uid == uid || isPengelola());
       allow update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role'])
+        && request.resource.data.keys().hasOnly(['uid', 'nama', 'nim', 'email', 'role', 'labIds'])
         && request.resource.data.uid == uid
         && resource.data.uid == uid
         && validText(request.resource.data.nama, 1, 120)
@@ -45,14 +62,20 @@ service cloud.firestore {
 
     match /labs/{labId} {
       allow read: if signedIn();
-      allow create, update: if isAsisten()
+      // SRS-17 & SRS-18: pengelolaan laboratorium, distribusi praktikan/asprak,
+      // serta kebijakan radius & keterlambatan hanya boleh ditulis oleh ASLAB.
+      allow create, update: if isAslab()
         && request.resource.data.keys().hasOnly([
-          'nama', 'gedung', 'latitude', 'longitude', 'radiusMeter',
+          'nama', 'gedung', 'mataKuliah', 'latitude', 'longitude', 'radiusMeter',
+          'gracePeriodMenit', 'nominalDenda',
+          'aslabUids', 'asprakUids', 'praktikanUids',
           'dibuatPada', 'diubahPada'
         ])
         && validText(request.resource.data.nama, 1, 120)
         && (!('gedung' in request.resource.data)
           || validText(request.resource.data.gedung, 0, 160))
+        && (!('mataKuliah' in request.resource.data)
+          || validText(request.resource.data.mataKuliah, 0, 120))
         && request.resource.data.latitude is number
         && request.resource.data.latitude >= -90
         && request.resource.data.latitude <= 90
@@ -61,12 +84,26 @@ service cloud.firestore {
         && request.resource.data.longitude <= 180
         && request.resource.data.radiusMeter is number
         && request.resource.data.radiusMeter > 0
-        && request.resource.data.radiusMeter <= 250;
-      allow delete: if isAsisten();
+        && request.resource.data.radiusMeter <= 250
+        && (!('gracePeriodMenit' in request.resource.data)
+          || (request.resource.data.gracePeriodMenit is number
+            && request.resource.data.gracePeriodMenit >= 0
+            && request.resource.data.gracePeriodMenit <= 180))
+        && (!('nominalDenda' in request.resource.data)
+          || (request.resource.data.nominalDenda is number
+            && request.resource.data.nominalDenda >= 0
+            && request.resource.data.nominalDenda <= 1000000))
+        && (!('aslabUids' in request.resource.data)
+          || request.resource.data.aslabUids is list)
+        && (!('asprakUids' in request.resource.data)
+          || request.resource.data.asprakUids is list)
+        && (!('praktikanUids' in request.resource.data)
+          || request.resource.data.praktikanUids is list);
+      allow delete: if isAslab();
     }
 
     match /users/{uid}/fcmTokens/{token} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAsisten());
+      allow read: if signedIn() && (request.auth.uid == uid || isPengelola());
       allow create, update: if signedIn()
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['platform', 'diperbaruiPada'])
@@ -75,30 +112,31 @@ service cloud.firestore {
     }
 
     match /classes/{classId} {
-      allow read: if isAsisten()
+      allow read: if isPengelola()
         || (isPraktikan() && request.auth.uid in resource.data.pesertaUids);
-      allow write: if isAsisten();
+      allow write: if isPengelola();
     }
 
     match /sessions/{sessionId} {
-      allow read: if isAsisten()
-        || (isPraktikan()
-          && request.auth.uid in get(/databases/$(database)/documents/classes/$(resource.data.classId)).data.pesertaUids);
-      allow write: if isAsisten();
+      allow read: if isPengelola()
+        || (isPraktikan() && isPesertaKelas(resource.data.classId));
+      allow write: if isPengelola();
 
       match /attendance/{uid} {
-        allow read: if isAsisten() || (isPraktikan() && request.auth.uid == uid);
-        // Attendance Sprint 3 is written only by the Admin SDK in
-        // functions/src/index.ts after server-side location validation.
+        allow read: if isPengelola() || (isPraktikan() && request.auth.uid == uid);
+        // Presensi Sprint 3 & 4 ditulis hanya oleh backend Admin SDK setelah validasi
+        // lokasi dan perhitungan keterlambatan.
         allow create: if false;
         allow update: if false;
-        allow delete: if isAsisten();
+        allow delete: if isPengelola();
       }
     }
 
     match /permissions/{permissionId} {
-      allow read: if isAsisten() || (isPraktikan() && resource.data.uid == request.auth.uid);
-      allow create: if isPraktikan() && request.resource.data.uid == request.auth.uid
+      allow read: if isPengelola()
+        || (isPraktikan() && resource.data.uid == request.auth.uid);
+      allow create: if isPraktikan()
+        && request.resource.data.uid == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.keys().hasOnly([
           'uid', 'sessionId', 'alasan', 'kategoriAI', 'statusAI', 'status',
@@ -107,7 +145,7 @@ service cloud.firestore {
         && request.resource.data.sessionId is string
         && request.resource.data.alasan is string
         && request.resource.data.alasan.size() > 0
-        && request.auth.uid in get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.classId)).data.pesertaUids;
+        && isPesertaKelas(sessionClassId(request.resource.data.sessionId));
       allow update: if (
           isPraktikan()
           && resource.data.uid == request.auth.uid
@@ -116,9 +154,11 @@ service cloud.firestore {
           && request.resource.data.sessionId == resource.data.sessionId
           && request.resource.data.alasan == resource.data.alasan
           && request.resource.data.status == 'pending'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kategoriAI', 'statusAI'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'kategoriAI', 'statusAI'
+          ])
         ) || (
-          isAsisten()
+          isPengelola()
           && resource.data.status == 'pending'
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.sessionId == resource.data.sessionId
@@ -131,6 +171,20 @@ service cloud.firestore {
           ])
         );
       allow delete: if false;
+    }
+
+    match /fines/{fineId} {
+      allow read: if isAslab()
+        || (isPraktikan() && resource.data.uid == request.auth.uid);
+      // Tagihan denda hanya dibuat & diperbarui oleh backend setelah validasi presensi / webhook Midtrans.
+      allow write: if false;
+    }
+
+    match /payments/{orderId} {
+      allow read: if isAslab()
+        || (isPraktikan() && resource.data.uid == request.auth.uid);
+      // Riwayat transaksi hanya ditulis oleh backend setelah membuat transaksi / verifikasi webhook Midtrans.
+      allow write: if false;
     }
   }
 }

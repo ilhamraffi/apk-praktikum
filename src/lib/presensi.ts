@@ -1,5 +1,10 @@
+// src/lib/presensi.ts
+// Satu-satunya jalur Sprint 3 & 4 untuk menulis attendance.
+// Jika EXPO_PUBLIC_BACKEND_URL diatur (Vercel), pemanggilan melewati endpoint HTTPS
+// backend; jika kosong, tetap fallback ke Firebase Functions callable.
 import { getFunctions, httpsCallable } from "@react-native-firebase/functions";
-import type { Koordinat } from "../types";
+import type { Koordinat, StatusKetepatan } from "../types";
+import { ambilUrlBackend, panggilBackend } from "./backend";
 
 interface CatatPresensiRequest {
   sessionId: string;
@@ -8,14 +13,16 @@ interface CatatPresensiRequest {
   kodePresensi?: string;
 }
 
-interface CatatPresensiResponse {
+export interface CatatPresensiResponse {
   jarakMeter: number;
   radiusMeter: number;
+  statusKetepatan?: StatusKetepatan;
+  terlambatMenit?: number;
+  fineId?: string | null;
+  nominalDenda?: number;
 }
 
-const functions = getFunctions();
-
-/** Satu-satunya jalur Sprint 3 untuk menulis attendance. */
+/** Satu-satunya jalur Sprint 3 & 4 untuk menulis attendance + hitung keterlambatan/denda. */
 export async function catatPresensi(
   input: CatatPresensiRequest,
 ): Promise<CatatPresensiResponse> {
@@ -33,6 +40,13 @@ export async function catatPresensi(
     throw new Error("Lokasi perangkat belum tersedia.");
   }
 
+  if (ambilUrlBackend()) {
+    return panggilBackend<CatatPresensiResponse>("/api/presensi/catat", {
+      ...input,
+    });
+  }
+
+  const functions = getFunctions();
   const panggil = httpsCallable<
     CatatPresensiRequest,
     CatatPresensiResponse
